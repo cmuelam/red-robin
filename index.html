@@ -1,0 +1,2970 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Robin — DOOH Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a0a;--bg2:#111;--bg3:#181818;--bg4:#1e1e1e;
+  --line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.12);
+  --red:#E8001C;--red2:rgba(232,0,28,.15);--red3:rgba(232,0,28,.08);
+  --green:#00D97E;--yellow:#FFD600;
+  --w1:#fff;--w2:rgba(255,255,255,.85);--w3:rgba(255,255,255,.5);--w4:rgba(255,255,255,.3);
+  --f-head:'Bebas Neue',sans-serif;--f-body:'Outfit',sans-serif;--f-mono:'DM Mono',monospace;
+  --r:6px;--r2:10px;--r3:16px;
+  --sidebar:220px;--topbar:52px;
+}
+html,body{height:100%;background:var(--bg);color:var(--w1);font-family:var(--f-body);font-size:14px;overflow:hidden}
+
+/* ── LOGIN ── */
+#login{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:0}
+#login.hidden{display:none}
+.login-logo{font-family:var(--f-head);font-size:52px;letter-spacing:6px;color:#fff;margin-bottom:4px}
+.tron-logo{font-family:var(--f-head);font-size:64px;letter-spacing:12px;color:#fff;text-shadow:0 0 20px rgba(232,0,28,.8),0 0 60px rgba(232,0,28,.4),0 0 100px rgba(232,0,28,.2);position:relative}
+.tron-logo::before{content:'ROBIN';position:absolute;inset:0;color:transparent;-webkit-text-stroke:1px rgba(232,0,28,.3);filter:blur(8px);letter-spacing:12px}
+@keyframes scan{0%{top:-2px}100%{top:100%}}
+.login-sub{font-size:10px;letter-spacing:4px;color:var(--w4);text-transform:uppercase;margin-bottom:40px}
+.login-box{width:320px;display:flex;flex-direction:column;gap:10px}
+.login-box input{background:var(--bg2);border:1px solid var(--line2);border-radius:var(--r);padding:11px 14px;color:#fff;font-size:14px;font-family:var(--f-body);width:100%;outline:none;transition:border-color .2s}
+.login-box input:focus{border-color:var(--red)}
+.login-err{font-size:11px;color:var(--red);text-align:center;display:none}
+
+/* ── APP SHELL ── */
+#app{display:none;height:100vh;flex-direction:column}
+#app.on{display:flex}
+#topbar{height:var(--topbar);background:var(--bg);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;z-index:100}
+.tb-logo{font-family:var(--f-head);font-size:22px;letter-spacing:3px;color:#fff}
+.tb-logo span{color:var(--red)}
+.tb-sep{width:1px;height:18px;background:var(--line2)}
+.tb-user{font-size:10px;letter-spacing:2px;color:var(--w4);text-transform:uppercase}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+
+#body{display:flex;flex:1;overflow:hidden}
+
+/* ── SIDEBAR ── */
+#sidebar{width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.nav-section{padding:20px 14px 6px;font-size:9px;letter-spacing:2px;color:var(--w4);text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;border-radius:0;color:var(--w3);font-size:13px;transition:all .15s;border-left:2px solid transparent;margin:1px 0}
+.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.6}
+.nav-item:hover{color:var(--w1);background:rgba(255,255,255,.04)}
+.nav-item.on{color:var(--w1);background:var(--red3);border-left-color:var(--red)}
+.nav-item.on svg{opacity:1}
+.nav-div{height:1px;background:var(--line);margin:8px 0}
+.nav-badge{margin-left:auto;font-size:9px;background:var(--red);color:#fff;padding:1px 6px;border-radius:20px;font-family:var(--f-mono)}
+
+/* ── MAIN ── */
+#main{flex:1;overflow-y:auto;background:var(--bg)}
+.panel{display:none;padding:28px;min-height:100%}
+.panel.on{display:block}
+
+/* ── WIZARD ── */
+.wiz-wrap{max-width:900px;margin:0 auto}
+.wiz-header{margin-bottom:32px}
+.wiz-title{font-size:22px;font-weight:700;color:#fff;margin-bottom:4px}
+.wiz-desc{font-size:13px;color:var(--w3)}
+
+/* Progress bar */
+.wiz-prog{display:flex;align-items:center;margin-bottom:36px;position:relative}
+.wiz-prog::before{content:'';position:absolute;top:18px;left:18px;right:18px;height:1px;background:var(--line2);z-index:0}
+.wstep{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;position:relative;z-index:1;cursor:default}
+.wstep-dot{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line2);background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:11px;font-family:var(--f-mono);color:var(--w4);transition:all .3s}
+.wstep-lbl{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--w4);transition:all .3s}
+.wstep.active .wstep-dot{border-color:var(--red);background:var(--red2);color:#fff}
+.wstep.active .wstep-lbl{color:var(--w1)}
+.wstep.done .wstep-dot{border-color:var(--green);background:rgba(0,217,126,.1);color:var(--green)}
+.wstep.done .wstep-lbl{color:var(--green)}
+
+/* Step panels */
+.wp{display:none}.wp.on{display:block}
+.wiz-footer{display:flex;justify-content:space-between;align-items:center;margin-top:32px;padding-top:24px;border-top:1px solid var(--line)}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:var(--r);border:1px solid var(--line2);background:transparent;color:var(--w2);font-size:13px;font-family:var(--f-body);cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn:hover{border-color:rgba(255,255,255,.25);color:#fff;background:rgba(255,255,255,.05)}
+.btn-primary{background:var(--red);border-color:var(--red);color:#fff;font-weight:600}
+.btn-primary:hover{background:#c8001a;border-color:#c8001a}
+.btn-ghost{border-color:transparent;color:var(--w3)}
+.btn-ghost:hover{border-color:var(--line2);color:var(--w1)}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── INPUTS ── */
+input,textarea,select{background:var(--bg3);border:1px solid var(--line2);border-radius:var(--r);padding:8px 12px;color:#fff;font-size:13px;font-family:var(--f-body);outline:none;transition:border-color .2s;width:100%}
+input:focus,textarea:focus,select:focus{border-color:var(--red)}
+select option{background:var(--bg3)}
+label.lbl{font-size:11px;color:var(--w3);display:block;margin-bottom:5px;letter-spacing:.5px}
+
+/* ── CARDS ── */
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r2);padding:18px}
+.card-title{font-size:13px;font-weight:600;color:#fff;margin-bottom:4px}
+.card-desc{font-size:12px;color:var(--w3);margin-bottom:14px;line-height:1.5}
+
+/* ── ACTIVATOR CARDS ── */
+.act-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:8px}
+.act-card{background:var(--bg2);border:1.5px solid var(--line);border-radius:var(--r2);padding:20px 16px;cursor:pointer;transition:all .2s;position:relative}
+.act-card:hover{border-color:var(--line2);background:var(--bg3)}
+.act-card.on{border-color:var(--red);background:var(--red3)}
+.act-card.on::after{content:'✓';position:absolute;top:10px;right:12px;font-size:12px;color:var(--red)}
+.act-icon{font-size:28px;margin-bottom:10px}
+.act-ttl{font-size:14px;font-weight:600;color:#fff;margin-bottom:4px}
+.act-desc{font-size:11px;color:var(--w3);line-height:1.5}
+
+/* ── FIXTURE LIST ── */
+.fix-card{background:var(--bg3);border:1.5px solid var(--line);border-radius:var(--r);padding:12px 14px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.fix-card:hover{border-color:var(--line2)}
+.fix-card.on{border-color:var(--red);background:var(--red3)}
+.fix-teams{flex:1;font-size:13px;font-weight:600;color:#fff}
+.fix-meta{font-size:11px;color:var(--w3);margin-top:2px}
+.fix-status{font-size:10px;padding:2px 8px;border-radius:20px;font-family:var(--f-mono);font-weight:600;flex-shrink:0}
+.fix-status.live{background:rgba(232,0,28,.2);color:var(--red)}
+.fix-status.pre{background:rgba(255,255,255,.08);color:var(--w3)}
+.fix-status.ft{background:rgba(255,255,255,.05);color:var(--w4)}
+.fix-selected{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;min-height:32px}
+.fix-chip{display:flex;align-items:center;gap:6px;background:var(--red2);border:1px solid var(--red);border-radius:20px;padding:4px 10px;font-size:11px;color:var(--red)}
+.fix-chip button{background:none;border:none;color:var(--red);cursor:pointer;padding:0;font-size:13px;line-height:1}
+
+/* ── CREATIVE EDITOR ── */
+.creative-wrap{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+.creative-preview-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;flex-shrink:0}
+.creative-preview{width:200px;height:280px;border-radius:var(--r2);overflow:hidden;position:relative;background:#111;border:1px solid var(--line2)}
+.creative-controls{flex:1;min-width:260px;display:flex;flex-direction:column;gap:16px}
+.upload-zone{border:1.5px dashed var(--line2);border-radius:var(--r);padding:20px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+.upload-zone:hover{border-color:var(--red);background:var(--red3)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.row{display:flex;align-items:center;gap:10px}
+.row .lbl{width:90px;flex-shrink:0;margin:0}
+
+/* ── EXPORT GRID ── */
+.exp-grid{display:grid;grid-template-columns:200px 1fr;gap:24px}
+.exp-cards{display:flex;flex-direction:column;gap:10px}
+.exp-card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r2);padding:16px}
+.exp-card.highlight{border-color:rgba(232,0,28,.3);background:rgba(232,0,28,.04)}
+.exp-card-ttl{font-size:13px;font-weight:600;color:#fff;margin-bottom:3px}
+.exp-card-desc{font-size:11px;color:var(--w3);margin-bottom:12px;line-height:1.5}
+
+/* ── CAMPAIGNS LIST ── */
+.cmp-card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r2);padding:16px;display:flex;align-items:center;gap:14px;margin-bottom:8px;transition:border-color .15s}
+.cmp-card:hover{border-color:var(--line2)}
+.cmp-thumb{width:48px;height:67px;border-radius:4px;background:var(--bg3);flex-shrink:0;overflow:hidden}
+.cmp-thumb img{width:100%;height:100%;object-fit:cover}
+.cmp-info{flex:1;min-width:0}
+.cmp-name{font-size:14px;font-weight:600;color:#fff;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmp-meta{font-size:11px;color:var(--w3)}
+.cmp-actions{display:flex;gap:6px;flex-shrink:0}
+
+/* ── TOASTS ── */
+#toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:99999}
+.toast{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--r);font-size:13px;animation:slideIn .2s ease;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+.toast.ts{background:#1a3d2b;border:1px solid var(--green);color:var(--green)}
+.toast.te{background:#3d1a1a;border:1px solid var(--red);color:#ff6b6b}
+.toast.ti{background:var(--bg3);border:1px solid var(--line2);color:var(--w2)}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:none;opacity:1}}
+@keyframes fadeOut{to{opacity:0;transform:translateX(10px)}}
+
+/* ── CREATIVE TABS ── */
+.cr-tab{color:var(--w3);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+.cr-tab.on{color:var(--w1);border-bottom-color:var(--red)}
+.cr-tab-pane{display:none}.cr-tab-pane.on{display:flex;flex-direction:column;gap:14px}
+.cr-fmt-btn.on{background:var(--red2);border-color:var(--red);color:var(--red)}
+.cr-state-btn.on{background:var(--red2);border-color:var(--red);color:var(--red)}
+.cr-grad-opt{transition:all .15s}
+.cr-grad-opt.on{border-color:var(--red)!important;outline:1px solid var(--red)}
+/* ── MISC ── */
+.section-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:4px}
+.section-sub{font-size:12px;color:var(--w3);margin-bottom:20px}
+.divider{height:1px;background:var(--line);margin:20px 0}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-family:var(--f-mono);letter-spacing:.5px}
+.tag-red{background:var(--red2);color:var(--red);border:1px solid rgba(232,0,28,.3)}
+.tag-green{background:rgba(0,217,126,.1);color:var(--green);border:1px solid rgba(0,217,126,.3)}
+.tag-gray{background:rgba(255,255,255,.06);color:var(--w3);border:1px solid var(--line)}
+.dot-live{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-right:5px;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.loading{display:flex;align-items:center;gap:8px;color:var(--w3);font-size:12px}
+.spinner{width:14px;height:14px;border:2px solid var(--line2);border-top-color:var(--red);border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.cfg-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.cfg-lbl{font-size:11px;color:var(--w3);width:130px;flex-shrink:0}
+textarea{resize:vertical;min-height:80px}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px}
+
+.cr-section{background:var(--bg2);border:1px solid var(--line2);border-radius:12px;padding:16px}
+.cr-section-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--w2);margin-bottom:12px}
+
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══════════════════════════════════════════════════ -->
+<div id="login">
+  <!-- Grid lines TRON background -->
+  <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none">
+    <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(232,0,28,.04) 60px),repeating-linear-gradient(90deg,transparent,transparent 59px,rgba(232,0,28,.04) 60px)"></div>
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 50% 50%,transparent 40%,rgba(0,0,0,.8) 100%)"></div>
+    <!-- Scan line -->
+    <div id="scanline" style="position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(232,0,28,.4),transparent);animation:scan 4s linear infinite;top:0"></div>
+  </div>
+
+  <!-- Robin — Robot mascot centered above ROBIN text -->
+  <div style="position:relative;margin-bottom:28px;text-align:center;z-index:1">
+    <div style="display:inline-flex;flex-direction:column;align-items:center;gap:0">
+
+      <!-- Robot mascot — centered above wordmark -->
+      <!-- ROBOT: full redesign — blocky industrial, no bird features -->
+      <svg id="rb-bird" viewBox="0 0 100 112" fill="none" xmlns="http://www.w3.org/2000/svg"
+        style="width:100px;height:112px;margin-bottom:2px;filter:drop-shadow(0 0 24px rgba(232,0,28,.8));flex-shrink:0">
+        <defs>
+          <linearGradient id="rbM" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#2e2e2e"/>
+            <stop offset="100%" stop-color="#0c0c0c"/>
+          </linearGradient>
+          <linearGradient id="rbM2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#222"/>
+            <stop offset="100%" stop-color="#080808"/>
+          </linearGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2.5" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glow2">
+            <feGaussianBlur stdDeviation="4" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- Float group -->
+        <g id="rb-float">
+
+          <!-- ANTENNA base -->
+          <rect x="46" y="2" width="8" height="3" rx="1.5" fill="#E8001C" opacity=".5"/>
+          <!-- Antenna pole -->
+          <rect x="49" y="0" width="2" height="7" rx="1" fill="#888"/>
+          <!-- Antenna tip pulsing -->
+          <circle id="rb-ant" cx="50" cy="0" r="3" fill="#E8001C" filter="url(#glow2)"/>
+
+          <!-- SIDE ears / bolts -->
+          <rect x="16" y="14" width="6" height="10" rx="2" fill="url(#rbM)" stroke="#E8001C" stroke-width="1" opacity=".8"/>
+          <rect x="78" y="14" width="6" height="10" rx="2" fill="url(#rbM)" stroke="#E8001C" stroke-width="1" opacity=".8"/>
+
+          <!-- HEAD: wide rectangle -->
+          <rect x="18" y="7" width="64" height="38" rx="6" fill="url(#rbM)" stroke="#E8001C" stroke-width="1.8" filter="url(#glow)"/>
+          <!-- Head horizontal scanlines -->
+          <line x1="18" y1="22" x2="82" y2="22" stroke="#E8001C" stroke-width=".5" opacity=".15"/>
+          <line x1="18" y1="34" x2="82" y2="34" stroke="#E8001C" stroke-width=".5" opacity=".15"/>
+
+          <!-- VISOR: wide glowing LED bar -->
+          <rect x="22" y="14" width="56" height="18" rx="4" fill="#E8001C" filter="url(#glow2)" opacity=".9"/>
+          <rect x="23" y="15" width="54" height="16" rx="3.5" fill="#1a0004" opacity=".75"/>
+          <!-- Scan line in visor -->
+          <rect id="rb-scan" x="23" y="21" width="12" height="3" rx="1.5" fill="#fff" opacity=".9"/>
+          <!-- Visor reflection -->
+          <rect x="26" y="17" width="16" height="2" rx="1" fill="#fff" opacity=".12"/>
+          <!-- Corner indicator LEDs -->
+          <circle cx="26" cy="18" r="2" fill="#E8001C" opacity=".7"/>
+          <circle cx="74" cy="18" r="2" fill="#E8001C" opacity=".7"/>
+
+          <!-- MOUTH GRILLE -->
+          <rect x="30" y="36" width="40" height="7" rx="2" fill="#111" stroke="#E8001C" stroke-width=".8" opacity=".9"/>
+          <line x1="38" y1="36" x2="38" y2="43" stroke="#E8001C" stroke-width=".7" opacity=".4"/>
+          <line x1="46" y1="36" x2="46" y2="43" stroke="#E8001C" stroke-width=".7" opacity=".4"/>
+          <line x1="54" y1="36" x2="54" y2="43" stroke="#E8001C" stroke-width=".7" opacity=".4"/>
+          <line x1="62" y1="36" x2="62" y2="43" stroke="#E8001C" stroke-width=".7" opacity=".4"/>
+
+          <!-- NECK: segmented -->
+          <rect x="40" y="45" width="20" height="8" rx="2" fill="url(#rbM2)" stroke="#E8001C" stroke-width="1" opacity=".85"/>
+          <line x1="46" y1="45" x2="46" y2="53" stroke="#E8001C" stroke-width=".6" opacity=".3"/>
+          <line x1="54" y1="45" x2="54" y2="53" stroke="#E8001C" stroke-width=".6" opacity=".3"/>
+
+          <!-- SHOULDERS -->
+          <rect x="14" y="55" width="14" height="6" rx="3" fill="url(#rbM)" stroke="#E8001C" stroke-width="1" opacity=".8"/>
+          <rect x="72" y="55" width="14" height="6" rx="3" fill="url(#rbM)" stroke="#E8001C" stroke-width="1" opacity=".8"/>
+
+          <!-- BODY: wide rect with panel detail -->
+          <rect x="20" y="53" width="60" height="40" rx="5" fill="url(#rbM)" stroke="#E8001C" stroke-width="1.8" filter="url(#glow)"/>
+          <!-- Body inner panel -->
+          <rect x="28" y="60" width="44" height="26" rx="3" fill="#E8001C" opacity=".06" stroke="#E8001C" stroke-width=".8" stroke-opacity=".3"/>
+          <!-- Circuit traces -->
+          <line x1="28" y1="66" x2="20" y2="66" stroke="#E8001C" stroke-width=".8" opacity=".3"/>
+          <line x1="72" y1="66" x2="80" y2="66" stroke="#E8001C" stroke-width=".8" opacity=".3"/>
+          <line x1="28" y1="75" x2="20" y2="75" stroke="#E8001C" stroke-width=".8" opacity=".2"/>
+          <line x1="72" y1="75" x2="80" y2="75" stroke="#E8001C" stroke-width=".8" opacity=".2"/>
+          <!-- CHEST LED — big glowing circle -->
+          <circle cx="50" cy="73" r="7" fill="#E8001C" filter="url(#glow2)" opacity=".85"/>
+          <circle cx="50" cy="73" r="4" fill="#fff" opacity=".9"/>
+          <!-- Side status LEDs -->
+          <circle cx="32" cy="62" r="2" fill="#E8001C" opacity=".6"/>
+          <circle cx="68" cy="62" r="2" fill="#E8001C" opacity=".6"/>
+          <!-- Bottom vent -->
+          <rect x="36" y="84" width="28" height="4" rx="2" fill="#111" stroke="#E8001C" stroke-width=".7" opacity=".7"/>
+          <line x1="42" y1="84" x2="42" y2="88" stroke="#E8001C" stroke-width=".7" opacity=".4"/>
+          <line x1="50" y1="84" x2="50" y2="88" stroke="#E8001C" stroke-width=".7" opacity=".4"/>
+          <line x1="58" y1="84" x2="58" y2="88" stroke="#E8001C" stroke-width=".7" opacity=".4"/>
+
+          <!-- LEFT ARM -->
+          <rect x="4" y="56" width="12" height="32" rx="4" fill="url(#rbM)" stroke="#E8001C" stroke-width="1.2" opacity=".85"/>
+          <rect x="5" y="86" width="10" height="8" rx="3" fill="url(#rbM)" stroke="#E8001C" stroke-width="1" opacity=".9"/>
+          <line x1="5" y1="68" x2="15" y2="68" stroke="#E8001C" stroke-width=".6" opacity=".25"/>
+
+          <!-- RIGHT ARM -->
+          <rect x="84" y="56" width="12" height="32" rx="4" fill="url(#rbM)" stroke="#E8001C" stroke-width="1.2" opacity=".85"/>
+          <rect x="85" y="86" width="10" height="8" rx="3" fill="url(#rbM)" stroke="#E8001C" stroke-width="1" opacity=".9"/>
+          <line x1="85" y1="68" x2="95" y2="68" stroke="#E8001C" stroke-width=".6" opacity=".25"/>
+
+          <!-- LEGS -->
+          <rect x="30" y="93" width="17" height="16" rx="3" fill="url(#rbM)" stroke="#E8001C" stroke-width="1.2" opacity=".9"/>
+          <rect x="53" y="93" width="17" height="16" rx="3" fill="url(#rbM)" stroke="#E8001C" stroke-width="1.2" opacity=".9"/>
+          <!-- Feet -->
+          <rect x="27" y="106" width="22" height="6" rx="2" fill="url(#rbM)" stroke="#E8001C" stroke-width="1" opacity=".85"/>
+          <rect x="51" y="106" width="22" height="6" rx="2" fill="url(#rbM)" stroke="#E8001C" stroke-width="1" opacity=".85"/>
+
+          <!-- Float animation -->
+          <animateTransform attributeName="transform" type="translate" values="0,0;0,-3;0,0" dur="3s" repeatCount="indefinite" additive="sum"/>
+        </g>
+      </svg>
+
+      <!-- ROBIN wordmark below robot -->
+      <div class="tron-logo" style="letter-spacing:12px;margin-top:2px">ROBIN</div>
+
+      <!-- Tagline -->
+      <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+        <div style="height:1px;width:30px;background:linear-gradient(90deg,transparent,var(--red))"></div>
+        <div style="font-size:9px;letter-spacing:4px;color:var(--w4);text-transform:uppercase">DOOH Platform</div>
+        <div style="height:1px;width:30px;background:linear-gradient(270deg,transparent,var(--red))"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    var ant = document.getElementById('rb-ant');
+    var scan = document.getElementById('rb-scan');
+    if(!ant) return;
+    // Antenna pulse
+    var bright = true;
+    setInterval(function(){
+      bright = !bright;
+      ant.setAttribute('r', bright ? '3' : '4.5');
+      ant.style.opacity = bright ? '1' : '0.5';
+    }, 700);
+    // Eye scan sweep
+    var sx = 23;
+    setInterval(function(){
+      sx += 1.8; if(sx > 64) sx = 23;
+      if(scan) scan.setAttribute('x', sx);
+    }, 40);
+  })();
+  </script>
+
+  <div class="login-box" style="margin-top:24px">
+    <input id="lu" type="text" placeholder="Usuario" autocomplete="username">
+    <input id="lp" type="password" placeholder="Contraseña" autocomplete="current-password">
+    <div class="login-err" id="lerr">Usuario o contraseña incorrectos</div>
+    <button class="btn btn-primary" onclick="doLogin()" style="justify-content:center;padding:12px;margin-top:4px;font-size:14px;letter-spacing:1px">ENTRAR →</button>
+  </div>
+</div>
+
+<!-- ══ APP ═════════════════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- Topbar -->
+  <div id="topbar">
+    <div class="tb-logo">ROBIN<span>.</span></div>
+    <div class="tb-sep"></div>
+    <div class="tb-user" id="tb-user"></div>
+    <div class="tb-right">
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Salir</button>
+    </div>
+  </div>
+
+  <div id="body">
+    <!-- Sidebar -->
+    <div id="sidebar">
+      <div class="nav-section">Campaña</div>
+      <div class="nav-item on" data-panel="wizard" onclick="navTo('wizard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Nueva campaña <span class="nav-badge">GO</span>
+      </div>
+      <div class="nav-div"></div>
+      <div class="nav-section">Gestión</div>
+      <div class="nav-item" data-panel="campaigns" onclick="navTo('campaigns')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h12"/></svg>
+        Campañas
+      </div>
+      <div class="nav-item" data-panel="screens" onclick="navTo('screens')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        Pantallas
+      </div>
+      <div class="nav-div"></div>
+      <div class="nav-section">Sistema</div>
+      <div class="nav-item" data-panel="config" onclick="navTo('config')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 19.07l1.41-1.41M12 2v2M12 20v2M20 12h2M2 12h2M17.66 17.66l-1.41-1.41M6.34 6.34l1.41 1.41"/></svg>
+        Configuración
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div id="main">
+
+      <!-- ══ WIZARD ══════════════════════════════════════════ -->
+      <div class="panel on" id="panel-wizard">
+        <div class="wiz-wrap">
+          <div class="wiz-header">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div>
+                <div class="wiz-title">Nueva campaña</div>
+                <div class="wiz-desc">Crea tu copy dinámico DOOH en 5 pasos</div>
+              </div>
+              <button class="btn btn-ghost btn-sm" id="btn-reset" style="display:none" onclick="wizReset()">↺ Reiniciar</button>
+            </div>
+          </div>
+
+          <!-- Progress -->
+          <div class="wiz-prog">
+            <div class="wstep active" id="ws0">
+              <div class="wstep-dot">1</div>
+              <div class="wstep-lbl">Template</div>
+            </div>
+            <div class="wstep" id="ws1">
+              <div class="wstep-dot">2</div>
+              <div class="wstep-lbl">Creativo</div>
+            </div>
+            <div class="wstep" id="ws2">
+              <div class="wstep-dot">3</div>
+              <div class="wstep-lbl">Datos</div>
+            </div>
+            <div class="wstep" id="ws3">
+              <div class="wstep-dot">4</div>
+              <div class="wstep-lbl">Activadores</div>
+            </div>
+            <div class="wstep" id="ws4">
+              <div class="wstep-dot">5</div>
+              <div class="wstep-lbl">Exportar</div>
+            </div>
+          </div>
+
+          <!-- STEP 0: Template -->
+          <div class="wp on" id="wp0">
+            <div class="section-title" style="margin-bottom:4px">Elige un template</div>
+            <div class="section-sub" style="margin-bottom:18px">El template define el estilo visual del widget. Luego personalizas con tu marca.</div>
+
+            <!-- Template grid -->
+            <div id="tpl-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px"></div>
+
+            <div style="display:flex;justify-content:flex-end">
+              <button class="btn btn-primary" onclick="tplNext()">Siguiente → Creativo</button>
+            </div>
+          </div>
+
+          <!-- STEP 1: Creativo -->
+<div class="wp" id="wp1">
+
+  <!-- Header -->
+  <div style="margin-bottom:20px">
+    <div class="section-title">🎨 Diseña tu creativo</div>
+    <div class="section-sub">Configura el aspecto visual de tu campaña DOOH</div>
+  </div>
+
+  <!-- Layout: preview sticky izquierda + controles derecha -->
+  <div style="display:grid;grid-template-columns:190px 1fr;gap:20px;align-items:start">
+
+    <!-- ══ PREVIEW (sticky) ══ -->
+    <div style="position:sticky;top:65px;display:flex;flex-direction:column;gap:10px">
+
+      <!-- Formato -->
+      <div>
+        <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--w4);margin-bottom:6px">Formato</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
+          <button class="cr-fmt-btn" data-fmt="portrait"  onclick="crFmt('portrait')"
+            style="padding:6px 2px;border-radius:7px;border:1.5px solid var(--red);background:var(--red2);color:#fff;font-size:10px;font-family:var(--f-mono);cursor:pointer;font-weight:700">9:16</button>
+          <button class="cr-fmt-btn" data-fmt="landscape" onclick="crFmt('landscape')"
+            style="padding:6px 2px;border-radius:7px;border:1.5px solid var(--line2);background:transparent;color:var(--w3);font-size:10px;font-family:var(--f-mono);cursor:pointer">16:9</button>
+          <button class="cr-fmt-btn" data-fmt="square"    onclick="crFmt('square')"
+            style="padding:6px 2px;border-radius:7px;border:1.5px solid var(--line2);background:transparent;color:var(--w3);font-size:10px;font-family:var(--f-mono);cursor:pointer">1:1</button>
+        </div>
+      </div>
+
+      <!-- Preview frame -->
+      <div style="background:var(--bg3);border-radius:10px;border:1.5px solid var(--line2);padding:8px">
+        <div id="cr-preview-wrap" style="width:100%;display:flex;justify-content:center">
+          <div id="cr-preview" style="width:174px;height:244px;position:relative;overflow:hidden;border-radius:4px"></div>
+        </div>
+      </div>
+
+      <!-- Simular estado -->
+      <div>
+        <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--w4);margin-bottom:6px">Simular estado</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+          <button class="cr-st-btn" data-st="pre"  onclick="crSt('pre')"
+            style="padding:6px 4px;border-radius:6px;border:1.5px solid var(--red);background:var(--red2);color:#fff;font-size:9px;cursor:pointer;font-family:var(--f-body)">Pre-juego</button>
+          <button class="cr-st-btn" data-st="live" onclick="crSt('live')"
+            style="padding:6px 4px;border-radius:6px;border:1.5px solid var(--line2);background:transparent;color:var(--w3);font-size:9px;cursor:pointer;font-family:var(--f-body)">● En vivo</button>
+          <button class="cr-st-btn" data-st="ht"   onclick="crSt('ht')"
+            style="padding:6px 4px;border-radius:6px;border:1.5px solid var(--line2);background:transparent;color:var(--w3);font-size:9px;cursor:pointer;font-family:var(--f-body)">Medio T.</button>
+          <button class="cr-st-btn" data-st="ft"   onclick="crSt('ft')"
+            style="padding:6px 4px;border-radius:6px;border:1.5px solid var(--line2);background:transparent;color:var(--w3);font-size:9px;cursor:pointer;font-family:var(--f-body)">Final</button>
+        </div>
+      </div>
+
+      <!-- Pantalla destino -->
+      <div>
+        <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--w4);margin-bottom:6px">Pantalla</div>
+        <select id="cr-screen" onchange="crUpdateScreen()"
+          style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--line2);border-radius:8px;color:#fff;font-family:var(--f-body);font-size:11px">
+          <option value="eco"  data-w="420"  data-h="588">🚲 Ecobici — 420×588</option>
+          <option value="mb"   data-w="576"  data-h="448">🚌 Metrobús — 576×448</option>
+          <option value="amc"  data-w="1080" data-h="1920">✈️ Aero CDMX T2</option>
+          <option value="amty" data-w="1080" data-h="1920">✈️ Aero MTY</option>
+          <option value="tx"   data-w="800"  data-h="600">🚕 Taxis — 800×600</option>
+          <option value="tl"   data-w="1080" data-h="1920">🚋 Tren Ligero</option>
+        </select>
+      </div>
+
+    </div><!-- /preview col -->
+
+    <!-- ══ CONTROLES ══ -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+
+      <!-- ─ 1. NOMBRE ─ -->
+      <div class="cr-section">
+        <div class="cr-section-title">📋 Nombre de campaña</div>
+        <input id="cr-name" type="text" placeholder="ej: Heineken · Liga MX · Clausura 2026"
+          oninput="W.name=this.value"
+          style="width:100%;padding:10px 12px;background:var(--bg2);border:1.5px solid var(--line2);border-radius:8px;color:#fff;font-family:var(--f-body);font-size:13px;box-sizing:border-box;transition:border-color .2s"
+          onfocus="this.style.borderColor='var(--red)'" onblur="this.style.borderColor='var(--line2)'">
+      </div>
+
+      <!-- ─ 2. FONDO & LOGO ─ -->
+      <div class="cr-section">
+        <div class="cr-section-title">🖼️ Imagen de fondo & Logo de marca</div>
+
+        <!-- Upload areas — big and clear -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+
+          <!-- BG Upload -->
+          <div>
+            <div style="font-size:11px;color:var(--w3);margin-bottom:7px;font-weight:500">Imagen de fondo</div>
+            <div id="cr-bg-drop" onclick="document.getElementById('cr-bg-input').click()"
+              style="border:2px dashed var(--line2);border-radius:10px;padding:18px 12px;text-align:center;cursor:pointer;position:relative;transition:all .2s;min-height:90px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px"
+              ondragover="event.preventDefault();this.style.borderColor='var(--red)';this.style.background='rgba(232,0,28,.05)'"
+              ondragleave="this.style.borderColor='var(--line2)';this.style.background=''"
+              ondrop="crBgDrop(event);this.style.borderColor='var(--line2)';this.style.background=''">
+              <input id="cr-bg-input" type="file" accept="image/*" style="display:none" onchange="crBgFile(event)">
+              <div id="cr-bg-placeholder">
+                <div style="font-size:28px;margin-bottom:4px">📁</div>
+                <div style="font-size:11px;color:var(--w3);font-weight:500">Arrastra o haz clic</div>
+                <div style="font-size:9px;color:var(--w4);margin-top:2px">JPG, PNG, WEBP</div>
+              </div>
+              <div id="cr-bg-thumb" style="display:none;position:absolute;inset:0;border-radius:9px;background-size:cover;background-position:center"></div>
+              <button id="cr-bg-clear" onclick="event.stopPropagation();crClearBg()"
+                style="display:none;position:absolute;top:6px;right:6px;background:rgba(0,0,0,.85);border:1px solid var(--line2);color:#fff;border-radius:50%;width:22px;height:22px;font-size:10px;cursor:pointer;line-height:22px;text-align:center">✕</button>
+            </div>
+          </div>
+
+          <!-- Logo Upload -->
+          <div>
+            <div style="font-size:11px;color:var(--w3);margin-bottom:7px;font-weight:500">Logo de marca</div>
+            <div id="cr-logo-drop" onclick="document.getElementById('cr-logo-input').click()"
+              style="border:2px dashed var(--line2);border-radius:10px;padding:18px 12px;text-align:center;cursor:pointer;position:relative;transition:all .2s;min-height:90px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px"
+              ondragover="event.preventDefault();this.style.borderColor='var(--red)';this.style.background='rgba(232,0,28,.05)'"
+              ondragleave="this.style.borderColor='var(--line2)';this.style.background=''"
+              ondrop="crLogoDrop(event);this.style.borderColor='var(--line2)';this.style.background=''">
+              <input id="cr-logo-input" type="file" accept="image/*" style="display:none" onchange="crLogoFile(event)">
+              <div id="cr-logo-placeholder">
+                <div style="font-size:28px;margin-bottom:4px">🏢</div>
+                <div style="font-size:11px;color:var(--w3);font-weight:500">Arrastra o haz clic</div>
+                <div style="font-size:9px;color:var(--w4);margin-top:2px">PNG con transparencia recomendado</div>
+              </div>
+              <div id="cr-logo-thumb" style="display:none;position:absolute;inset:0;border-radius:9px;background-size:contain;background-position:center;background-repeat:no-repeat;padding:8px;box-sizing:border-box"></div>
+              <button id="cr-logo-clear" onclick="event.stopPropagation();crClearLogo()"
+                style="display:none;position:absolute;top:6px;right:6px;background:rgba(0,0,0,.85);border:1px solid var(--line2);color:#fff;border-radius:50%;width:22px;height:22px;font-size:10px;cursor:pointer;line-height:22px;text-align:center">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Color de fondo -->
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--line)">
+          <div style="font-size:11px;color:var(--w3);font-weight:500;white-space:nowrap">Color fondo:</div>
+          <input id="cr-color" type="color" value="#111111" oninput="CR.bgColor=this.value;crRenderBar()"
+            style="width:32px;height:28px;border:1.5px solid var(--line2);border-radius:6px;cursor:pointer;padding:1px;background:none">
+          <div style="display:flex;gap:5px;flex-wrap:wrap">
+            <div onclick="document.getElementById('cr-color').value='#0a0a0a';CR.bgColor='#0a0a0a';crRenderBar()"
+              style="width:24px;height:24px;border-radius:5px;background:#0a0a0a;border:1px solid var(--line2);cursor:pointer" title="Negro"></div>
+            <div onclick="document.getElementById('cr-color').value='#111827';CR.bgColor='#111827';crRenderBar()"
+              style="width:24px;height:24px;border-radius:5px;background:#111827;border:1px solid var(--line2);cursor:pointer" title="Navy"></div>
+            <div onclick="document.getElementById('cr-color').value='#1a0005';CR.bgColor='#1a0005';crRenderBar()"
+              style="width:24px;height:24px;border-radius:5px;background:#1a0005;border:1px solid var(--line2);cursor:pointer" title="Rojo oscuro"></div>
+            <div onclick="document.getElementById('cr-color').value='#001824';CR.bgColor='#001824';crRenderBar()"
+              style="width:24px;height:24px;border-radius:5px;background:#001824;border:1px solid var(--line2);cursor:pointer" title="Azul oscuro"></div>
+            <div onclick="document.getElementById('cr-color').value='#001a0a';CR.bgColor='#001a0a';crRenderBar()"
+              style="width:24px;height:24px;border-radius:5px;background:#001a0a;border:1px solid var(--line2);cursor:pointer" title="Verde oscuro"></div>
+            <div onclick="document.getElementById('cr-color').value='#1a1000';CR.bgColor='#1a1000';crRenderBar()"
+              style="width:24px;height:24px;border-radius:5px;background:#1a1000;border:1px solid var(--line2);cursor:pointer" title="Oro oscuro"></div>
+          </div>
+        </div>
+
+        <!-- Logo controls (visible when logo loaded) -->
+        <div id="cr-logo-controls" style="display:none;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+          <div style="font-size:11px;color:var(--w3);margin-bottom:8px;font-weight:500">Ajuste del logo</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <div style="font-size:10px;color:var(--w4);margin-bottom:5px">Tamaño: <span id="cr-logo-sz-val">20</span>%</div>
+              <input id="cr-logo-sz" type="range" min="5" max="60" value="20"
+                oninput="CR.logoSize=+this.value;document.getElementById('cr-logo-sz-val').textContent=this.value;crRenderBar()"
+                style="width:100%">
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--w4);margin-bottom:5px">Opacidad: <span id="cr-logo-op-val">100</span>%</div>
+              <input id="cr-logo-op" type="range" min="10" max="100" value="100"
+                oninput="CR.logoOpacity=+this.value;document.getElementById('cr-logo-op-val').textContent=this.value;crRenderBar()"
+                style="width:100%">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─ 3. WIDGET ─ -->
+      <div class="cr-section">
+        <div class="cr-section-title">📊 Widget de datos</div>
+
+        <!-- Posición + tamaño en fila -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+          <div>
+            <div style="font-size:11px;color:var(--w3);margin-bottom:7px;font-weight:500">Posición del widget</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+              <button data-pos="bottom" onclick="CR.barPos='bottom';crSyncBarPos();crRenderBar()"
+                style="padding:8px;border-radius:7px;border:1.5px solid var(--red);background:var(--red2);color:#fff;font-size:11px;cursor:pointer;font-family:var(--f-body);font-weight:600">▼ Abajo</button>
+              <button data-pos="top" onclick="CR.barPos='top';crSyncBarPos();crRenderBar()"
+                style="padding:8px;border-radius:7px;border:1.5px solid var(--line2);background:transparent;color:var(--w3);font-size:11px;cursor:pointer;font-family:var(--f-body)">▲ Arriba</button>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--w3);margin-bottom:7px;font-weight:500">Tamaño: <span id="cr-bar-size-val">35</span>%</div>
+            <input id="cr-bar-size" type="range" min="20" max="55" value="35" step="1"
+              oninput="CR.barSize=+this.value;document.getElementById('cr-bar-size-val').textContent=this.value;crRenderBar()"
+              style="width:100%;margin-top:4px">
+          </div>
+        </div>
+
+        <!-- Gradiente -->
+        <div style="margin-bottom:14px">
+          <div style="font-size:11px;color:var(--w3);margin-bottom:7px;font-weight:500">Estilo de fondo</div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">
+            <div class="cr-grad-opt" data-grad="dark"   onclick="crGrad('dark')"
+              style="padding:10px 4px;border-radius:8px;border:2px solid var(--red);cursor:pointer;background:linear-gradient(135deg,#1a1a1a,#050505);text-align:center;font-size:10px;color:#fff;font-weight:600">Dark</div>
+            <div class="cr-grad-opt" data-grad="red"    onclick="crGrad('red')"
+              style="padding:10px 4px;border-radius:8px;border:2px solid var(--line2);cursor:pointer;background:linear-gradient(135deg,#2a0008,#0a0002);text-align:center;font-size:10px;color:#fff">Red</div>
+            <div class="cr-grad-opt" data-grad="blue"   onclick="crGrad('blue')"
+              style="padding:10px 4px;border-radius:8px;border:2px solid var(--line2);cursor:pointer;background:linear-gradient(135deg,#001840,#000820);text-align:center;font-size:10px;color:#fff">Blue</div>
+            <div class="cr-grad-opt" data-grad="green"  onclick="crGrad('green')"
+              style="padding:10px 4px;border-radius:8px;border:2px solid var(--line2);cursor:pointer;background:linear-gradient(135deg,#003015,#001a08);text-align:center;font-size:10px;color:#fff">Green</div>
+            <div class="cr-grad-opt" data-grad="custom" onclick="crGrad('custom')"
+              style="padding:10px 4px;border-radius:8px;border:2px solid var(--line2);cursor:pointer;background:linear-gradient(135deg,#1a0800,#0a0400);text-align:center;font-size:10px;color:#fff">Custom</div>
+          </div>
+        </div>
+
+        <!-- Colores del marcador -->
+        <div style="margin-bottom:14px">
+          <div style="font-size:11px;color:var(--w3);margin-bottom:7px;font-weight:500">Colores del marcador</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <div style="background:var(--bg2);border-radius:8px;padding:10px;text-align:center;border:1px solid var(--line)">
+              <input id="cr-score-color" type="color" value="#FFFFFF" oninput="crRenderBar()"
+                style="width:40px;height:36px;border:1.5px solid var(--line2);border-radius:7px;cursor:pointer;padding:2px;background:var(--bg3);display:block;margin:0 auto 5px">
+              <div style="font-size:10px;color:var(--w3);font-weight:500">Marcador</div>
+            </div>
+            <div style="background:var(--bg2);border-radius:8px;padding:10px;text-align:center;border:1px solid var(--line)">
+              <input id="cr-team-color" type="color" value="#CCCCCC" oninput="crRenderBar()"
+                style="width:40px;height:36px;border:1.5px solid var(--line2);border-radius:7px;cursor:pointer;padding:2px;background:var(--bg3);display:block;margin:0 auto 5px">
+              <div style="font-size:10px;color:var(--w3);font-weight:500">Equipos</div>
+            </div>
+            <div style="background:var(--bg2);border-radius:8px;padding:10px;text-align:center;border:1px solid var(--line)">
+              <input id="cr-live-color" type="color" value="#E8001C" oninput="crRenderBar()"
+                style="width:40px;height:36px;border:1.5px solid var(--line2);border-radius:7px;cursor:pointer;padding:2px;background:var(--bg3);display:block;margin:0 auto 5px">
+              <div style="font-size:10px;color:var(--w3);font-weight:500">EN VIVO</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- QR Code -->
+        <div>
+          <div style="font-size:11px;color:var(--w3);margin-bottom:7px;font-weight:500">🔗 QR Code <span style="color:var(--w4);font-weight:400">(opcional)</span></div>
+          <input id="cr-qr" type="url" placeholder="https://tu-url.com/promo"
+            oninput="CR.qrUrl=this.value;crRenderBar()"
+            style="width:100%;padding:9px 12px;background:var(--bg2);border:1.5px solid var(--line2);border-radius:8px;color:#fff;font-family:var(--f-body);font-size:12px;box-sizing:border-box;transition:border-color .2s"
+            onfocus="this.style.borderColor='var(--red)'" onblur="this.style.borderColor='var(--line2)'">
+        </div>
+      </div>
+
+      <!-- ─ 4. GENERADOR IA ─ -->
+      <div class="cr-section" id="cr-ai-section" style="border-color:rgba(232,0,28,.35);background:rgba(232,0,28,.04)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <div style="font-size:18px">✨</div>
+          <div>
+            <div class="cr-section-title" style="margin-bottom:1px;color:#fff">Generador IA</div>
+            <div style="font-size:10px;color:var(--w4)">Diseño automático de widget con inteligencia artificial</div>
+          </div>
+          <div id="ai-applied-badge" style="display:none;margin-left:auto;background:rgba(0,217,126,.15);border:1px solid var(--green);border-radius:12px;padding:3px 8px;font-size:9px;color:var(--green);font-weight:700">✓ APLICADO</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div>
+            <div style="font-size:11px;color:var(--w3);margin-bottom:6px;font-weight:500">Marca / Anunciante</div>
+            <input id="ai-brand" type="text" placeholder="ej: Heineken"
+              style="width:100%;padding:9px 12px;background:var(--bg2);border:1.5px solid var(--line2);border-radius:8px;color:#fff;font-family:var(--f-body);font-size:12px;box-sizing:border-box;transition:border-color .2s"
+              onfocus="this.style.borderColor='var(--red)'" onblur="this.style.borderColor='var(--line2)'">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--w3);margin-bottom:6px;font-weight:500">Copy del creativo</div>
+            <input id="ai-copy" type="text" placeholder="ej: Vive el partido"
+              style="width:100%;padding:9px 12px;background:var(--bg2);border:1.5px solid var(--line2);border-radius:8px;color:#fff;font-family:var(--f-body);font-size:12px;box-sizing:border-box;transition:border-color .2s"
+              onfocus="this.style.borderColor='var(--red)'" onblur="this.style.borderColor='var(--line2)'">
+          </div>
+        </div>
+
+        <!-- Colores + estilo -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+          <div style="font-size:11px;color:var(--w3);font-weight:500">Colores:</div>
+          <input id="ai-c1" type="color" value="#E8001C" style="width:30px;height:30px;border:1.5px solid var(--line2);border-radius:6px;cursor:pointer;padding:1px;background:none">
+          <input id="ai-c2" type="color" value="#FFFFFF" style="width:30px;height:30px;border:1.5px solid var(--line2);border-radius:6px;cursor:pointer;padding:1px;background:none">
+          <input id="ai-c3" type="color" value="#000000" style="width:30px;height:30px;border:1.5px solid var(--line2);border-radius:6px;cursor:pointer;padding:1px;background:none">
+          <div style="margin-left:auto;display:flex;gap:5px">
+            <button onclick="crAIStyle('sport')"   class="ai-style-btn" data-s="sport"
+              style="padding:5px 10px;border-radius:14px;border:1.5px solid var(--red);background:var(--red2);color:#fff;font-size:10px;cursor:pointer;font-family:var(--f-body);font-weight:600">Sport</button>
+            <button onclick="crAIStyle('premium')" class="ai-style-btn" data-s="premium"
+              style="padding:5px 10px;border-radius:14px;border:1.5px solid var(--line2);background:transparent;color:var(--w3);font-size:10px;cursor:pointer;font-family:var(--f-body)">Premium</button>
+            <button onclick="crAIStyle('neon')"    class="ai-style-btn" data-s="neon"
+              style="padding:5px 10px;border-radius:14px;border:1.5px solid var(--line2);background:transparent;color:var(--w3);font-size:10px;cursor:pointer;font-family:var(--f-body)">Neon</button>
+          </div>
+        </div>
+
+        <button id="ai-gen-btn" onclick="aiGenerate()"
+          style="width:100%;padding:12px;background:var(--red);border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--f-body);letter-spacing:.5px;display:flex;align-items:center;justify-content:center;gap:8px">
+          <span>✨</span> Generar diseño con IA
+        </button>
+        <div id="ai-status" style="display:none;margin-top:8px;padding:9px 12px;background:var(--bg3);border-radius:8px;font-size:11px;color:var(--w3);text-align:center">
+          Generando diseño...
+        </div>
+      </div>
+
+    </div><!-- /controles -->
+  </div><!-- /grid -->
+
+  <!-- Bottom nav -->
+  <div style="display:flex;justify-content:space-between;margin-top:24px;padding-top:18px;border-top:1px solid var(--line)">
+    <button class="btn btn-ghost" onclick="wProg(0)">← Template</button>
+    <button class="btn btn-primary" onclick="wProg(2)">Siguiente → Datos →</button>
+  </div>
+</div>
+
+<!-- STEP 2: Datos -->
+          <div class="wp" id="wp2">
+            <div id="wp2-body"></div>
+            <div class="wiz-footer">
+              <button class="btn btn-ghost" onclick="wProg(1)">← Atrás</button>
+              <button class="btn btn-primary" onclick="wProg(3)">Siguiente → Activadores →</button>
+            </div>
+          </div>
+
+          <!-- STEP 3: Activadores -->
+          <div class="wp" id="wp3">
+            <div class="section-title" style="margin-bottom:4px">Selecciona los activadores</div>
+            <div class="section-sub">Elige qué datos se mostrarán en la pantalla. Puedes combinarlos.</div>
+            <div class="act-grid">
+              <div class="act-card" id="ac-dep" onclick="toggleAct('deportes')">
+                <div class="act-icon">⚽</div>
+                <div class="act-ttl">Deportes</div>
+                <div class="act-desc">Marcador en vivo, minuto, tarjetas, previa y resultado final</div>
+              </div>
+              <div class="act-card" id="ac-wx" onclick="toggleAct('clima')">
+                <div class="act-icon">🌤</div>
+                <div class="act-ttl">Clima</div>
+                <div class="act-desc">Temperatura y condición climática en tiempo real</div>
+              </div>
+              <div class="act-card" id="ac-cd" onclick="toggleAct('countdown')">
+                <div class="act-icon">⏳</div>
+                <div class="act-ttl">Countdown</div>
+                <div class="act-desc">Cuenta regresiva a un partido, estreno o fecha especial</div>
+              </div>
+            </div>
+
+            <!-- Countdown config -->
+            <div id="cd-cfg" style="display:none;margin-top:16px">
+              <div class="card">
+                <div class="card-title" style="margin-bottom:12px">⏳ Configurar countdown</div>
+                <div class="cfg-row">
+                  <span class="cfg-lbl">Fecha y hora</span>
+                  <input type="datetime-local" id="cd-date" style="flex:1">
+                </div>
+                <div class="cfg-row">
+                  <span class="cfg-lbl">Mensaje final</span>
+                  <input type="text" id="cd-msg" placeholder="ej: ¡YA DISPONIBLE!" style="flex:1">
+                </div>
+              </div>
+            </div>
+
+            <!-- Weather config -->
+            <div id="wx-cfg" style="display:none;margin-top:12px">
+              <div class="card">
+                <div class="card-title" style="margin-bottom:12px">🌤 Configurar clima</div>
+                <div class="cfg-row">
+                  <span class="cfg-lbl">Ciudad</span>
+                  <input type="text" id="wx-city" placeholder="Ciudad de México" style="flex:1">
+                </div>
+              </div>
+            </div>
+
+            <div class="wiz-footer">
+              <button class="btn btn-ghost" onclick="wProg(2)">← Atrás</button>
+              <button class="btn btn-primary" onclick="s1Next()">Siguiente → Exportar →</button>
+            </div>
+          </div>
+
+          
+
+<div class="wp" id="wp4">
+            <div class="exp-grid">
+              <!-- Preview canvas -->
+              <div>
+                <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--w4);margin-bottom:8px">Preview final</div>
+                <canvas id="exp-canvas" width="160" height="224" style="border-radius:var(--r2);border:1px solid var(--line2);display:block;margin-bottom:12px"></canvas>
+                <div id="exp-sum" class="card" style="font-size:12px;line-height:2;padding:12px"></div>
+              </div>
+              <!-- Export options -->
+              <div class="exp-cards">
+                <div class="exp-card highlight">
+                  <div class="exp-card-ttl">🚀 Publicar en Netlify</div>
+                  <div class="exp-card-desc">Genera URL pública instantánea. Compártela con el cliente para aprobación.</div>
+                  <button class="btn btn-primary" id="btn-publish" onclick="doPublish()">🚀 Publicar campaña</button>
+                  <div id="pub-result" style="display:none;margin-top:10px">
+                    <label class="lbl">URL de la campaña</label>
+                    <div style="display:flex;gap:6px">
+                      <input id="pub-url" readonly style="font-size:11px;font-family:var(--f-mono)">
+                      <button class="btn btn-ghost btn-sm" onclick="copyUrl()">Copiar</button>
+                      <button class="btn btn-ghost btn-sm" onclick="openUrl()">Abrir</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="exp-card">
+                  <div class="exp-card-ttl">📦 ZIP para Hivestack / Perion</div>
+                  <div class="exp-card-desc">Descarga el paquete listo para subir a Expansión. Incluye motor HTML + config.</div>
+                  <button class="btn" onclick="doZip()">↓ Descargar ZIP</button>
+                </div>
+                <div class="exp-card">
+                  <div class="exp-card-ttl">💾 Guardar campaña</div>
+                  <div class="exp-card-desc">Guarda localmente para editar después o transferir a otro operador.</div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button class="btn btn-sm" onclick="saveCampaign()">Guardar</button>
+                    <button class="btn btn-ghost btn-sm" onclick="exportRobin()">↓ .robin</button>
+                  </div>
+                </div>
+                <div class="exp-card">
+                  <div class="exp-card-ttl">📄 config.js</div>
+                  <div class="exp-card-desc">Actualiza datos del partido sin regenerar el creativo.</div>
+                  <button class="btn btn-ghost btn-sm" onclick="dlConfig()">↓ config.js</button>
+                </div>
+                <div style="background:var(--bg2);border:1px solid var(--line);border-radius:var(--r2);padding:12px">
+                  <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--w4);margin-bottom:6px">config.js preview</div>
+                  <textarea id="cfg-preview" style="height:100px;font-size:10px;color:var(--green);resize:none" readonly></textarea>
+                </div>
+              </div>
+            </div>
+            <div class="wiz-footer">
+              <button class="btn btn-ghost" onclick="wizBack(4)">← Atrás</button>
+              <button class="btn btn-ghost" onclick="wizReset()">↺ Nueva campaña</button>
+            </div>
+          </div>
+
+        </div><!-- /wiz-wrap -->
+      </div><!-- /panel-wizard -->
+
+      <!-- ══ CAMPAIGNS ════════════════════════════════════════ -->
+      <div class="panel" id="panel-campaigns">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div>
+            <div class="section-title">Campañas guardadas</div>
+            <div class="section-sub">Historial de campañas creadas en este navegador</div>
+          </div>
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+            ↑ Importar .robin
+            <input type="file" accept=".robin,.json" style="display:none" onchange="importRobin(this)">
+          </label>
+        </div>
+        <div id="cmp-list"></div>
+      </div>
+
+      <!-- ══ SCREENS ══════════════════════════════════════════ -->
+      <div class="panel" id="panel-screens">
+        <div class="section-title" style="margin-bottom:4px">Red de pantallas</div>
+        <div class="section-sub">Circuitos Expansión — 435 pantallas activas</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:20px" id="screens-grid"></div>
+      </div>
+
+      <!-- ══ CONFIG ═══════════════════════════════════════════ -->
+      <div class="panel" id="panel-config">
+        <div class="section-title" style="margin-bottom:4px">Configuración</div>
+        <div class="section-sub">API keys y preferencias del sistema</div>
+        <div style="max-width:480px;margin-top:20px;display:flex;flex-direction:column;gap:10px">
+          <div class="card">
+            <div class="card-title" style="margin-bottom:12px">🔑 API Keys</div>
+            <div class="cfg-row"><span class="cfg-lbl">API-Football</span><input id="cfg-fk" type="password" placeholder="••••••••••••••••"></div>
+            <div class="cfg-row"><span class="cfg-lbl">OpenWeatherMap</span><input id="cfg-wk" type="password" placeholder="••••••••••••••••"></div>
+            <div class="cfg-row"><span class="cfg-lbl">Netlify Token</span><input id="cfg-ntk" type="password" placeholder="••••••••••••••••"></div>
+            <div class="cfg-row" style="flex-direction:column;align-items:flex-start;gap:4px">
+              <span class="cfg-lbl">Anthropic API Key <span style="color:var(--red)">✨ IA</span></span>
+              <input id="cfg-ank" type="password" placeholder="sk-ant-api03-..." style="width:100%">
+              <div style="font-size:10px;color:var(--w4)">Obtén tu key en <a href="https://console.anthropic.com" target="_blank" style="color:var(--red)">console.anthropic.com</a> → API Keys → Create Key</div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="saveConfig()" style="margin-top:4px">Guardar</button>
+          </div>
+          <div class="card">
+            <div class="card-title" style="margin-bottom:12px">👤 Usuarios</div>
+            <div id="users-list"></div>
+          </div>
+          <div id="cfg-ok" style="display:none;color:var(--green);font-size:12px">✓ Guardado</div>
+        </div>
+      </div>
+
+    </div><!-- /main -->
+  </div><!-- /body -->
+</div><!-- /app -->
+
+<div id="toasts"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// ROBIN v4 — Clean architecture
+// ═══════════════════════════════════════════════════════════════
+
+// ── Config & state ────────────────────────────────────────────
+var CFG = (function(){
+  var def = {
+    users: { admin:'robin2026', robin:'dooh2026' },
+    fk: '57122b72573ab1b98b90e9be20ca3bf5',
+    wk: '7ff55fee23b1bad75b35954f32bd303b',
+    ntk: 'nfp_maRukRm3RSa77gY5NXH78HExHor5QevF4605',
+    nsite: 'elegant-pixie-cdc084',
+    ref: 30
+  };
+  try { return Object.assign(def, JSON.parse(localStorage.getItem('rcfg')||'{}')); }
+  catch(e){ return def; }
+})();
+
+var W = {
+  step: 1,
+  acts: new Set(),        // 'deportes','clima','countdown'
+  fixtures: [],           // selected fixture objects from API
+  cdDate: null,
+  wxCity: 'Ciudad de México',
+  name: 'Nueva campaña',
+  screenW: 420,
+  screenH: 588
+};
+
+var CR = {
+  bgDataUrl: null, logoDataUrl: null, bgColor: '#111111',
+  barPos: 'bottom', barSize: 30, qrUrl: '',
+  bgScale:1, bgTranslateX:0, bgTranslateY:0,
+  logoSize:10, logoOpacity:100, aiOverlayHtml:null
+};
+
+var LEAGUES = [
+  { g:'🇲🇽 México', items:[
+    {id:262,s:2025,n:'Liga MX — Clausura 2026'},
+    {id:239,s:2025,n:'Liga de Expansión MX'},
+    {id:390,s:2024,n:'Liga Femenil MX'},
+    {id:406,s:2025,n:'Copa MX'},
+  ]},
+  { g:'🌍 Internacional', items:[
+    {id:1,s:2026,n:'Copa del Mundo 2026'},
+    {id:2,s:2025,n:'Champions League'},
+    {id:3,s:2025,n:'UEFA Europa League'},
+    {id:9,s:2024,n:'Copa América'},
+    {id:13,s:2025,n:'Libertadores'},
+    {id:20,s:2024,n:'Concacaf Champions Cup'},
+  ]},
+  { g:'🇪🇺 Europa', items:[
+    {id:39,s:2025,n:'🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League'},
+    {id:140,s:2025,n:'🇪🇸 La Liga'},
+    {id:135,s:2025,n:'🇮🇹 Serie A'},
+    {id:78,s:2025,n:'🇩🇪 Bundesliga'},
+    {id:61,s:2025,n:'🇫🇷 Ligue 1'},
+  ]},
+  { g:'🌎 Américas', items:[
+    {id:253,s:2025,n:'🇺🇸 MLS'},
+    {id:71,s:2025,n:'🇧🇷 Brasileirão'},
+    {id:128,s:2025,n:'🇦🇷 Liga Argentina'},
+  ]},
+];
+
+var SCREENS = [
+  {id:'eco', n:'Ecobici CDMX', cnt:265, color:'#00D97E', reach:'120M imp/mes', res:'420×588'},
+  {id:'mb',  n:'Metrobús CDMX', cnt:131, color:'#E8001C', reach:'60M imp/mes', res:'576×448'},
+  {id:'amc', n:'Aero CDMX T2', cnt:13, color:'#4D9EFF', reach:'15M imp/mes', res:'1080×1920'},
+  {id:'amty',n:'Aero MTY', cnt:12, color:'#9B6EFF', reach:'12M imp/mes', res:'1080×1920'},
+  {id:'tx',  n:'Sitios Taxi', cnt:9, color:'#FFD600', reach:'5M imp/mes', res:'800×600'},
+  {id:'tl',  n:'Tren Ligero', cnt:5, color:'#FF6B35', reach:'3M imp/mes', res:'1080×1920'},
+];
+
+// ── Auth ──────────────────────────────────────────────────────
+function doLogin() {
+  var u = document.getElementById('lu').value.trim();
+  var p = document.getElementById('lp').value;
+  if (CFG.users[u] && CFG.users[u] === p) {
+    document.getElementById('login').classList.add('hidden');
+  setTimeout(tplInit, 100);
+    document.getElementById('app').classList.add('on');
+    document.getElementById('tb-user').textContent = u.toUpperCase();
+    loadConfig();
+    renderScreens();
+  } else {
+    document.getElementById('lerr').style.display = 'block';
+    document.getElementById('lp').value = '';
+  }
+}
+
+function doLogout() {
+  document.getElementById('login').classList.remove('hidden');
+  document.getElementById('app').classList.remove('on');
+}
+
+// ── Nav ───────────────────────────────────────────────────────
+function navTo(id) {
+  document.querySelectorAll('.nav-item').forEach(function(el){ el.classList.remove('on'); });
+  document.querySelectorAll('.panel').forEach(function(el){ el.classList.remove('on'); });
+  var ni = document.querySelector('[data-panel="'+id+'"]');
+  if (ni) ni.classList.add('on');
+  var p = document.getElementById('panel-'+id);
+  if (p) p.classList.add('on');
+  if (id === 'campaigns') renderCampaigns();
+}
+
+// ── Toast ─────────────────────────────────────────────────────
+function toast(msg, type, dur) {
+  type = type || 'i'; dur = dur || 3000;
+  var t = document.createElement('div');
+  t.className = 'toast t'+type[0];
+  t.textContent = msg;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(function(){ t.style.animation='fadeOut .3s forwards'; setTimeout(function(){ t.remove(); }, 300); }, dur);
+}
+
+// ── Wizard progress ───────────────────────────────────────────
+function wProg(step) {
+  W.step = step;
+  // Panel map: step → panel id (direct 1:1)
+  // 0=Template(wp0), 1=Creativo(wp1), 2=Datos(wp2), 3=Activadores(wp3), 4=Export(wp4)
+  var panelMap = [0, 1, 2, 3, 4];
+  for (var i = 0; i <= 4; i++) {
+    var el = document.getElementById('ws'+i);
+    var d  = el ? el.querySelector('.wstep-dot') : null;
+    if (!el) continue;
+    el.classList.remove('active','done');
+    if (i < step) { el.classList.add('done'); if(d) d.textContent='✓'; }
+    else if (i === step) { el.classList.add('active'); if(d) d.textContent=i+1; }
+    else { if(d) d.textContent=i+1; }
+  }
+  // Show only the correct panel
+  for (var j = 0; j <= 4; j++) {
+    var wp = document.getElementById('wp'+j);
+    if (wp) wp.classList.toggle('on', j === panelMap[step]);
+  }
+  if (step > 0) {
+    var br = document.getElementById('btn-reset');
+    if (br) br.style.display = 'block';
+  }
+  if (step === 1) setTimeout(function(){ crResizePreview(); crRenderBar(); }, 80);  // Creativo
+  if (step === 2) setTimeout(buildStep2, 80);  // Datos
+  if (step === 4) renderExport();
+}
+
+function wizBack(fromStep) {
+  wProg(fromStep - 1);
+}
+
+function wizReset() {
+  W.step = 0; W.acts = new Set(); W.fixtures = []; W.cdDate = null;
+  W.wxCity = 'Ciudad de México'; W.name = 'Nueva campaña';
+  CR.bgDataUrl = null; CR.logoDataUrl = null; CR.bgColor = '#111111';
+  CR.barPos = 'bottom'; CR.barSize = 30; CR.qrUrl = '';
+  // Reset UI
+  ['ac-dep','ac-wx','ac-cd'].forEach(function(id){ var el=document.getElementById(id); if(el) el.classList.remove('on'); });
+  document.getElementById('cd-cfg').style.display = 'none';
+  document.getElementById('wx-cfg').style.display = 'none';
+  document.getElementById('btn-reset').style.display = 'none';
+  crClearBg(); crClearLogo();
+  W_TPL = null;
+  wProg(0);
+  setTimeout(tplInit, 50);
+}
+
+// ── CREATIVE ACCORDION HELPERS ──────────────────────────────
+function crToggle(id) {
+  var body = document.getElementById('crs-'+id+'-body');
+  var arr  = document.getElementById('crs-'+id+'-arr');
+  if (!body) return;
+  var open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (arr) arr.textContent = open ? '▶' : '▼';
+}
+
+function crSyncPosBtns() {
+  document.querySelectorAll('[data-pos]').forEach(function(el) {
+    var on = el.dataset.pos === CR.barPos;
+    el.style.borderColor  = on ? 'var(--red)'   : 'var(--line2)';
+    el.style.background   = on ? 'var(--red2)'  : 'transparent';
+    el.style.color        = on ? '#fff'          : 'var(--w3)';
+  });
+}
+
+function crSyncGrad(el) {
+  document.querySelectorAll('.cr-grad-opt').forEach(function(b) {
+    b.style.borderColor = b === el ? 'var(--red)' : 'var(--line)';
+  });
+  var cr = document.getElementById('cr-custom-row');
+  if (cr) cr.style.display = el && el.dataset.grad === 'custom' ? 'flex' : 'none';
+}
+
+function crSyncScoreStyle(el) {
+  document.querySelectorAll('.cr-score-style-btn').forEach(function(b) {
+    var on = b === el;
+    b.style.borderColor = on ? 'var(--red)'   : 'var(--line2)';
+    b.style.background  = on ? 'var(--red2)'  : 'transparent';
+    b.style.color       = on ? '#fff'          : 'var(--w3)';
+  });
+}
+
+function crSyncCopyPos(el) {
+  document.querySelectorAll('.cr-cp-btn').forEach(function(b) {
+    var on = b === el;
+    b.style.borderColor = on ? 'var(--red)'   : 'var(--line2)';
+    b.style.background  = on ? 'var(--red2)'  : 'transparent';
+    b.style.color       = on ? '#fff'          : 'var(--w3)';
+  });
+}
+
+function crSyncFmt(fmt) {
+  document.querySelectorAll('.cr-fmt-btn').forEach(function(b) {
+    var on = b.dataset.fmt === fmt;
+    b.style.borderColor = on ? 'var(--red)'   : 'var(--line2)';
+    b.style.background  = on ? 'var(--red2)'  : 'transparent';
+    b.style.color       = on ? '#fff'          : 'var(--w3)';
+  });
+}
+
+function crSyncSt(st) {
+  document.querySelectorAll('.cr-st-btn').forEach(function(b) {
+    var on = b.dataset.st === st;
+    b.style.borderColor = on ? 'var(--red)'   : 'var(--line2)';
+    b.style.background  = on ? 'var(--red2)'  : 'transparent';
+    b.style.color       = on ? '#fff'          : 'var(--w3)';
+  });
+}
+
+function crFmt(fmt) {
+  CR_FMT = fmt;
+  var map = {portrait:{w:420,h:588}, landscape:{w:576,h:448}, square:{w:420,h:420}};
+  var d = map[fmt] || map.portrait;
+  W.screenW = d.w; W.screenH = d.h;
+  crSyncFmt(fmt);
+  crResizePreview();
+  crRenderBar();
+}
+
+function crSt(st) {
+  CR_STATE = st;
+  crSyncSt(st);
+  crRenderBar();
+}
+
+function crResizePreview() {
+  // Letterbox preview to fit container
+  var wrap = document.getElementById('cr-preview-wrap');
+  var prev = document.getElementById('cr-preview');
+  if (!wrap || !prev) return;
+  var nw = W.screenW || 420;
+  var nh = W.screenH || 588;
+  var maxW = wrap.clientWidth || 300;
+  var sc = maxW / nw;
+  prev.style.width  = nw + 'px';
+  prev.style.height = nh + 'px';
+  prev.style.transform = 'scale(' + sc + ')';
+  prev.style.transformOrigin = 'top left';
+  wrap.style.height = Math.round(nh * sc) + 'px';
+  // Update zoom display
+  var zv = document.getElementById('cr-zoom-val');
+  if (zv) zv.textContent = Math.round((CR.bgScale||1)*100) + '%';
+}
+
+function crLoadCrest(side, event) {
+  var file = event.target.files[0]; if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    CR_CRESTS[side] = e.target.result;
+    var img = document.getElementById('cr-crest-'+side+'-img');
+    var ico = img ? img.parentElement.querySelector('span') : null;
+    if (img) { img.src = e.target.result; img.style.display = 'block'; if(ico) ico.style.display='none'; }
+    crRenderBar();
+  };
+  reader.readAsDataURL(file);
+}
+
+function crClearCrest(side) {
+  CR_CRESTS[side] = null;
+  var img = document.getElementById('cr-crest-'+side+'-img');
+  var ico = img ? img.parentElement.querySelector('span') : null;
+  if (img) { img.style.display = 'none'; if(ico) ico.style.display=''; }
+  crRenderBar();
+}
+
+function crScreenChange() {
+  var sel = document.getElementById('cr-screen-sel');
+  if (!sel) return;
+  var parts = sel.value.split(',');
+  W.screenW = +parts[0]; W.screenH = +parts[1];
+  var lbl = document.getElementById('cr-res-label');
+  if (lbl) lbl.textContent = W.screenW + ' × ' + W.screenH + ' px';
+  crResizePreview();
+  crRenderBar();
+}
+
+
+// ── TEMPLATE LIBRARY ────────────────────────────────────────────
+var TEMPLATES = [
+  {
+    id: 'sport-dark',
+    name: 'Sport Dark',
+    tag: 'Energía · Fútbol',
+    emoji: '⚡',
+    accent: '#E8001C',
+    preview: 'linear-gradient(160deg,#0a0a0f,#1a0008)',
+    scoreColor: '#FFFFFF',
+    teamColor: '#CCCCCC',
+    liveColor: '#E8001C',
+    gradient: 'red',
+    barSize: 38,
+    barPos: 'bottom',
+    scoreStyle: 'bold',
+    bgColor: '#080810',
+    desc: 'Intenso, rojo y negro. Para partidos de alto impacto.'
+  },
+  {
+    id: 'premium-gold',
+    name: 'Premium Gold',
+    tag: 'Lujo · Elegante',
+    emoji: '💎',
+    accent: '#C9A84C',
+    preview: 'linear-gradient(160deg,#0a0800,#1a1200)',
+    scoreColor: '#C9A84C',
+    teamColor: '#E8D5A0',
+    liveColor: '#C9A84C',
+    gradient: 'dark',
+    barSize: 36,
+    barPos: 'bottom',
+    scoreStyle: 'slim',
+    bgColor: '#0a0800',
+    desc: 'Dorado premium. Para marcas de lujo y cerveza premium.'
+  },
+  {
+    id: 'neon-city',
+    name: 'Neon City',
+    tag: 'Cyberpunk · Noche',
+    emoji: '🌆',
+    accent: '#00F5FF',
+    preview: 'linear-gradient(160deg,#000a1f,#001440)',
+    scoreColor: '#00F5FF',
+    teamColor: '#80EEFF',
+    liveColor: '#FF0080',
+    gradient: 'blue',
+    barSize: 38,
+    barPos: 'bottom',
+    scoreStyle: 'neon',
+    bgColor: '#000a1f',
+    desc: 'Cian neón sobre azul oscuro. Urbano y nocturno.'
+  },
+  {
+    id: 'minimal-white',
+    name: 'Minimal',
+    tag: 'Limpio · Tipografía',
+    emoji: '◼',
+    accent: '#FFFFFF',
+    preview: 'linear-gradient(160deg,#0d0d0d,#1a1a1a)',
+    scoreColor: '#FFFFFF',
+    teamColor: '#AAAAAA',
+    liveColor: '#FFFFFF',
+    gradient: 'dark',
+    barSize: 32,
+    barPos: 'bottom',
+    scoreStyle: 'mono',
+    bgColor: '#0d0d0d',
+    desc: 'Máxima legibilidad. Texto blanco, fondo negro.'
+  },
+  {
+    id: 'green-sport',
+    name: 'Arena Verde',
+    tag: 'Estadio · Grass',
+    emoji: '🟢',
+    accent: '#00D97E',
+    preview: 'linear-gradient(160deg,#001a08,#003015)',
+    scoreColor: '#00D97E',
+    teamColor: '#CCFFEE',
+    liveColor: '#00D97E',
+    gradient: 'green',
+    barSize: 38,
+    barPos: 'bottom',
+    scoreStyle: 'bold',
+    bgColor: '#001a08',
+    desc: 'Verde neón sobre negro. Fresco y deportivo.'
+  },
+  {
+    id: 'fire-top',
+    name: 'Fire Top',
+    tag: 'Dramático · Top',
+    emoji: '🔥',
+    accent: '#FF6B00',
+    preview: 'linear-gradient(160deg,#1a0800,#3d1500)',
+    scoreColor: '#FF6B00',
+    teamColor: '#FFD0A0',
+    liveColor: '#FF6B00',
+    gradient: 'custom',
+    barSize: 35,
+    barPos: 'top',
+    scoreStyle: 'bold',
+    bgColor: '#0a0400',
+    desc: 'Naranja fuego. Widget en la parte superior.'
+  },
+  {
+    id: 'purple-night',
+    name: 'Purple Night',
+    tag: 'Premium · Morado',
+    emoji: '🟣',
+    accent: '#9B6EFF',
+    preview: 'linear-gradient(160deg,#0a0018,#18003a)',
+    scoreColor: '#9B6EFF',
+    teamColor: '#D0B8FF',
+    liveColor: '#FF6EFF',
+    gradient: 'custom',
+    barSize: 36,
+    barPos: 'bottom',
+    scoreStyle: 'neon',
+    bgColor: '#0a0018',
+    desc: 'Morado neón. Ideal para crypto, tech, entretenimiento.'
+  },
+  {
+    id: 'ice-cold',
+    name: 'Ice Cold',
+    tag: 'Frío · Cervezas',
+    emoji: '🧊',
+    accent: '#4DC8FF',
+    preview: 'linear-gradient(160deg,#001824,#003048)',
+    scoreColor: '#4DC8FF',
+    teamColor: '#B0E8FF',
+    liveColor: '#4DC8FF',
+    gradient: 'blue',
+    barSize: 34,
+    barPos: 'bottom',
+    scoreStyle: 'slim',
+    bgColor: '#001824',
+    desc: 'Azul hielo. Perfecto para cervezas y bebidas frías.'
+  },
+];
+
+var W_TPL = null; // selected template id
+
+function tplInit() {
+  var grid = document.getElementById('tpl-grid');
+  if (!grid) return;
+  grid.innerHTML = TEMPLATES.map(function(t) {
+    return '<div class="tpl-card" id="tpl-'+t.id+'" onclick="tplSelect(\''+t.id+'\')" style="'
+      + 'border-radius:10px;border:2px solid rgba(255,255,255,.08);background:var(--bg2);'
+      + 'cursor:pointer;overflow:hidden;transition:all .2s;position:relative">'
+      // Preview swatch
+      + '<div style="height:56px;background:'+t.preview+';position:relative;display:flex;align-items:center;justify-content:center">'
+      // Mini scoreboard preview
+      + '<div style="display:flex;align-items:center;gap:6px">'
+      + '<div style="width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15)"></div>'
+      + '<div style="font-size:13px;font-weight:900;color:'+t.scoreColor+';letter-spacing:2px;'+(t.scoreStyle==='neon'?'text-shadow:0 0 8px '+t.scoreColor:'')+'">2 : 1</div>'
+      + '<div style="width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15)"></div>'
+      + '</div>'
+      // Live dot
+      + '<div style="position:absolute;top:5px;right:6px;width:5px;height:5px;border-radius:50%;background:'+t.liveColor+';box-shadow:0 0 6px '+t.liveColor+'"></div>'
+      + '</div>'
+      // Card info
+      + '<div style="padding:8px 10px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'
+      + '<div style="font-size:11px;font-weight:700;color:#fff">'+t.emoji+' '+t.name+'</div>'
+      + '</div>'
+      + '<div style="font-size:9px;color:rgba(255,255,255,.35);letter-spacing:.5px">'+t.desc+'</div>'
+      + '</div>'
+      // Selected checkmark overlay
+      + '<div class="tpl-check" style="display:none;position:absolute;top:5px;left:6px;width:16px;height:16px;border-radius:50%;background:'+t.accent+';display:none;align-items:center;justify-content:center">'
+      + '<span style="font-size:9px;color:#000;font-weight:900">✓</span></div>'
+      + '</div>';
+  }).join('');
+
+  // Auto-select first template if none selected
+  if (!W_TPL) tplSelect('sport-dark');
+}
+
+function tplSelect(id) {
+  W_TPL = id;
+  // Update card borders
+  document.querySelectorAll('.tpl-card').forEach(function(el) {
+    var tid = el.id.replace('tpl-','');
+    var tpl = TEMPLATES.find(function(t){return t.id===tid;});
+    var isSelected = tid === id;
+    el.style.borderColor = isSelected ? (tpl ? tpl.accent : '#E8001C') : 'rgba(255,255,255,.08)';
+    el.style.boxShadow = isSelected ? '0 0 16px '+(tpl?tpl.accent+'44':'#E8001C44') : 'none';
+    var chk = el.querySelector('.tpl-check');
+    if (chk) chk.style.display = isSelected ? 'flex' : 'none';
+  });
+}
+
+function tplApply() {
+  if (!W_TPL) return;
+  var t = TEMPLATES.find(function(t){return t.id===W_TPL;});
+  if (!t) return;
+  // Apply template values to CR and CR_ vars
+  CR.bgColor      = t.bgColor;
+  CR.barPos       = t.barPos;
+  CR.barSize      = t.barSize;
+  CR_GRAD         = t.gradient;
+  CR_SCORE_STYLE  = t.scoreStyle;
+  // Apply color pickers
+  var scEl = document.getElementById('cr-score-color'); if(scEl) scEl.value = t.scoreColor;
+  var tmEl = document.getElementById('cr-team-color');  if(tmEl) tmEl.value = t.teamColor;
+  var lvEl = document.getElementById('cr-live-color');  if(lvEl) lvEl.value = t.liveColor;
+  var bgEl = document.getElementById('cr-color');       if(bgEl) bgEl.value = t.bgColor;
+  // Sync bar position buttons
+  document.querySelectorAll('[data-pos]').forEach(function(el){
+    el.style.background = el.dataset.pos === t.barPos ? 'var(--red)' : 'var(--bg3)';
+    el.style.color = el.dataset.pos === t.barPos ? '#fff' : 'var(--w3)';
+  });
+  // Sync gradient buttons
+  document.querySelectorAll('.cr-grad-opt').forEach(function(el){
+    var on = el.dataset.grad === t.gradient;
+    el.style.borderColor = on ? 'var(--red)' : 'var(--line)';
+    el.style.outline = on ? '2px solid rgba(232,0,28,.3)' : 'none';
+  });
+  // Sync score style buttons
+  document.querySelectorAll('.cr-score-style-btn').forEach(function(el){
+    var on = el.dataset.style === t.scoreStyle;
+    el.style.background = on ? 'var(--red)' : 'var(--bg3)';
+    el.style.color = on ? '#fff' : 'var(--w3)';
+    el.style.borderColor = on ? 'var(--red)' : 'var(--line2)';
+  });
+  // Update bar height slider
+  var szEl = document.getElementById('cr-bar-size'); if(szEl){ szEl.value=t.barSize; szEl.dispatchEvent(new Event('input')); }
+}
+
+function tplNext() {
+  tplApply();
+  wProg(1);
+}
+
+// Initialize template grid when wizard starts
+
+
+// ── STEP 1 ────────────────────────────────────────────────────
+function toggleAct(act) {
+  var ids = {deportes:'ac-dep', clima:'ac-wx', countdown:'ac-cd'};
+  if (W.acts.has(act)) {
+    W.acts.delete(act);
+    document.getElementById(ids[act]).classList.remove('on');
+  } else {
+    W.acts.add(act);
+    document.getElementById(ids[act]).classList.add('on');
+  }
+  document.getElementById('cd-cfg').style.display = W.acts.has('countdown') ? 'block' : 'none';
+  document.getElementById('wx-cfg').style.display = W.acts.has('clima') ? 'block' : 'none';
+}
+
+
+function crToggleAI() {
+  var body = document.getElementById('cr-ai-body');
+  var icon = document.getElementById('cr-ai-toggle-icon');
+  if (!body) return;
+  var open = body.style.display === 'block';
+  body.style.display = open ? 'none' : 'block';
+  if (icon) icon.style.transform = open ? '' : 'rotate(180deg)';
+}
+function crUpdateScreen() {
+  var sel = document.getElementById('cr-screen');
+  if (!sel) return;
+  var opt = sel.options[sel.selectedIndex];
+  var w = +opt.dataset.w, h = +opt.dataset.h;
+  W.screenW = w; W.screenH = h;
+  // Update preview container aspect
+  var wrap = document.getElementById('cr-preview');
+  if (!wrap) return;
+  if (w && h) {
+    var maxW = 180, maxH = 252;
+    var scale = Math.min(maxW/w, maxH/h);
+    wrap.style.width  = Math.round(w*scale)+'px';
+    wrap.style.height = Math.round(h*scale)+'px';
+  }
+  crRenderBar();
+}
+function crSyncBarPos() {
+  document.querySelectorAll('[data-pos]').forEach(function(el) {
+    var on = el.dataset.pos === CR.barPos;
+    el.style.background   = on ? 'var(--red2)' : 'transparent';
+    el.style.borderColor  = on ? 'var(--red)'  : 'var(--line2)';
+    el.style.color        = on ? '#fff'         : 'var(--w3)';
+  });
+}
+function crLogoPos(pos) {
+  CR_LOGO_POS = pos;
+  document.querySelectorAll('.cr-lp-btn').forEach(function(el) {
+    var on = el.dataset.lp === pos;
+    el.style.background  = on ? 'var(--red2)' : 'transparent';
+    el.style.borderColor = on ? 'var(--red)'  : 'var(--line2)';
+    el.style.color       = on ? '#fff'         : 'var(--w3)';
+  });
+  crRenderBar();
+}
+function crAIStyle(s) {
+  document.querySelectorAll('.ai-style-btn').forEach(function(el){
+    var on = el.dataset.s === s;
+    el.style.background  = on ? 'var(--red2)' : 'transparent';
+    el.style.borderColor = on ? 'var(--red)'  : 'var(--line2)';
+    el.style.color       = on ? '#fff'         : 'var(--w3)';
+  });
+  W.aiStyle = s;
+}
+
+function s1Next() {
+  // Activadores → Export (step 4)
+  if (W.acts.has('countdown')) {
+    var d = document.getElementById('cd-date').value;
+    W.cdDate = d ? new Date(d) : null;
+  }
+  if (W.acts.has('clima')) {
+    W.wxCity = document.getElementById('wx-city').value.trim() || 'Ciudad de México';
+  }
+  wProg(4);
+}
+
+function s3ActivNext() {
+  // Datos → Activadores (step 3) - validate fixtures first
+  if (W.fixtures.length === 0) { toast('Elige al menos un partido','tw'); return; }
+  wProg(3);
+}
+
+// ── STEP 2: Datos ─────────────────────────────────────────────
+function buildStep2() {
+  var body = document.getElementById('wp2-body');
+  // Always enable deportes if user enters Datos
+  if (!W.acts.has('deportes')) W.acts.add('deportes');
+  // Build league selector
+  var opts = '<option value="">— Selecciona liga —</option>';
+  LEAGUES.forEach(function(g){
+    opts += '<optgroup label="'+g.g+'">';
+    g.items.forEach(function(l){ opts += '<option value="'+l.id+'" data-s="'+l.s+'">'+l.n+'</option>'; });
+    opts += '</optgroup>';
+  });
+  body.innerHTML =
+    '<div class="section-title" style="margin-bottom:4px">⚽ Partido</div>'+
+    '<div class="section-sub" style="margin-bottom:16px">Selecciona uno o más partidos para mostrar en pantalla.</div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">'+
+      '<select id="lg-sel" style="flex:1;min-width:200px" onchange="lgChange(this)">'+opts+'</select>'+
+      '<input type="text" id="fix-search" placeholder="🔍 Buscar equipo..." style="flex:1;min-width:160px" oninput="fixSearch(this.value)">'+
+      '<button class="btn btn-sm" style="background:var(--red2);border-color:var(--red);color:var(--red);white-space:nowrap" onclick="searchLive()"><span class="dot-live"></span>En Vivo</button>'+
+    '</div>'+
+    '<div id="fix-loading" style="display:none" class="loading"><div class="spinner"></div>Cargando partidos...</div>'+
+    '<div id="fix-list"></div>'+
+    '<div style="margin-top:14px">'+
+      '<div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--w4);margin-bottom:8px">Seleccionados</div>'+
+      '<div id="fix-chips" class="fix-selected"><div style="font-size:11px;color:var(--w4);padding:6px 0">Ninguno aún</div></div>'+
+    '</div>';
+  renderChips();
+}
+
+function lgChange(sel) {
+  if (!sel.value) return;
+  var opt = sel.options[sel.selectedIndex];
+  var season = opt.dataset.s || '2025';
+  fetchFixtures(sel.value, season);
+}
+
+async function fetchFixtures(leagueId, season) {
+  document.getElementById('fix-loading').style.display = 'flex';
+  document.getElementById('fix-list').innerHTML = '';
+  try {
+    var r = await fetch('/api/football?path=fixtures&league='+leagueId+'&season='+season+'&next=20', {
+      headers:{'x-api-key': CFG.fk}
+    });
+    var j = await r.json();
+    renderFixtures(j.response || []);
+  } catch(e) {
+    document.getElementById('fix-list').innerHTML = '<div style="font-size:12px;color:var(--w4);padding:10px">Error cargando partidos. Verifica tu API key.</div>';
+  }
+  document.getElementById('fix-loading').style.display = 'none';
+}
+
+async function searchLive() {
+  document.getElementById('fix-loading').style.display = 'flex';
+  document.getElementById('fix-list').innerHTML = '';
+  try {
+    var r = await fetch('/api/football?path=fixtures&live=all', {
+      headers:{'x-api-key': CFG.fk}
+    });
+    var j = await r.json();
+    renderFixtures(j.response || [], true);
+  } catch(e) {
+    document.getElementById('fix-list').innerHTML = '<div style="font-size:12px;color:var(--w4);padding:10px">Sin partidos en vivo ahora.</div>';
+  }
+  document.getElementById('fix-loading').style.display = 'none';
+}
+
+var _allFixtures = [];
+function fixSearch(q) {
+  if (!q) { renderFixtures(_allFixtures); return; }
+  q = q.toLowerCase();
+  renderFixtures(_allFixtures.filter(function(f){
+    return (f.teams.home.name+f.teams.away.name).toLowerCase().includes(q);
+  }));
+}
+
+function renderFixtures(fixtures, isLive) {
+  _allFixtures = fixtures;
+  var el = document.getElementById('fix-list');
+  if (!el) return;
+  if (!fixtures.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--w4);padding:10px">No hay partidos para mostrar.</div>';
+    return;
+  }
+  var h = '';
+  fixtures.slice(0,30).forEach(function(f){
+    var st = f.fixture.status.short;
+    var isL = ['1H','2H','ET','P','HT'].indexOf(st) >= 0;
+    var isFT = ['FT','AET'].indexOf(st) >= 0;
+    var score = isL || isFT ? (f.goals.home+' - '+f.goals.away) : '';
+    var statusLbl = isL ? '<span class="fix-status live"><span class="dot-live"></span>EN VIVO '+( f.fixture.status.elapsed||'')+"'</span>"
+      : isFT ? '<span class="fix-status ft">FT '+score+'</span>'
+      : '<span class="fix-status pre">'+fmtDate(f.fixture.date)+'</span>';
+    var isOn = W.fixtures.some(function(x){ return x.fixture.id === f.fixture.id; });
+    h += '<div class="fix-card'+(isOn?' on':'')+'" onclick="toggleFixture('+f.fixture.id+')" id="fc-'+f.fixture.id+'">'
+      + '<div style="flex:1">'
+      + '<div class="fix-teams">'+(isL||isFT?score+' · ':'')+f.teams.home.name+' vs '+f.teams.away.name+'</div>'
+      + '<div class="fix-meta">'+f.league.name+' · '+f.league.country+'</div>'
+      + '</div>'
+      + statusLbl
+      + '</div>';
+    // Store full fixture for later
+    if (!window._fixCache) window._fixCache = {};
+    window._fixCache[f.fixture.id] = f;
+  });
+  el.innerHTML = h;
+}
+
+function toggleFixture(id) {
+  var f = window._fixCache && window._fixCache[id];
+  if (!f) return;
+  var idx = W.fixtures.findIndex(function(x){ return x.fixture.id === id; });
+  if (idx >= 0) {
+    W.fixtures.splice(idx, 1);
+  } else {
+    W.fixtures.push(f);
+  }
+  var card = document.getElementById('fc-'+id);
+  if (card) card.classList.toggle('on', idx < 0);
+  renderChips();
+}
+
+function renderChips() {
+  var el = document.getElementById('fix-chips');
+  if (!el) return;
+  if (!W.fixtures.length) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--w4);padding:6px 0">Ninguno aún</div>';
+    return;
+  }
+  el.innerHTML = W.fixtures.map(function(f){
+    return '<div class="fix-chip">'
+      + f.teams.home.name+' vs '+f.teams.away.name
+      + '<button onclick="toggleFixture('+f.fixture.id+')">×</button>'
+      + '</div>';
+  }).join('');
+}
+
+function fmtDate(dateStr) {
+  var d = new Date(dateStr);
+  return d.toLocaleDateString('es-MX',{month:'short',day:'numeric'})+' '+d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+}
+
+function s2Next() {
+  // Datos → Activadores (step 3)
+  wProg(3);
+}
+
+// ── STEP 3: Creative ─────────────────────────────────────────
+var CR_STATE       = 'pre';
+var CR_FMT         = 'portrait';
+var CR_GRAD        = 'dark';
+var CR_COPY_POS    = 'mid-center';
+var CR_LOGO_POS    = 'top-left';
+var CR_SCORE_STYLE = 'bold';
+var CR_CRESTS      = {home:null, away:null};
+var _bgDrag        = {on:false, sx:0, sy:0, tx:0, ty:0, scale:1};
+
+function crTab(tab) {
+  document.querySelectorAll('.cr-tab').forEach(function(el){
+    var a=el.dataset.tab===tab;
+    el.style.color=a?'var(--w1)':'var(--w3)';
+    el.style.borderBottomColor=a?'var(--red)':'transparent';
+  });
+  document.querySelectorAll('.cr-tab-pane').forEach(function(el){el.style.display='none';});
+  var p=document.getElementById('cr-pane-'+tab); if(p) p.style.display='flex';
+}
+
+function crSetFmt(fmt) {
+  CR_FMT=fmt;
+  document.querySelectorAll('.cr-fmt-btn').forEach(function(el){
+    var on=el.dataset.fmt===fmt;
+    el.style.background=on?'var(--red2)':'transparent';
+    el.style.borderColor=on?'var(--red)':'var(--line2)';
+    el.style.color=on?'var(--red)':'var(--w3)';
+  });
+  var fmts={portrait:{w:180,h:252},landscape:{w:280,h:158},square:{w:210,h:210}};
+  var f=fmts[fmt]||fmts.portrait;
+  var pv=document.getElementById('cr-preview');
+  if(pv){pv.style.width=f.w+'px';pv.style.height=f.h+'px';}
+  crRenderBar();
+}
+
+function crSetState(state) {
+  CR_STATE=state;
+  document.querySelectorAll('.cr-state-btn').forEach(function(el){
+    var on=el.dataset.state===state;
+    el.style.background=on?'var(--red2)':'transparent';
+    el.style.borderColor=on?'var(--red)':'var(--line2)';
+    el.style.color=on?'var(--red)':'var(--w3)';
+  });
+  crRenderBar();
+}
+
+function crLoadBg(inp) {
+  if(!inp.files||!inp.files[0]) return;
+  var file=inp.files[0];
+  document.getElementById('cr-fname').textContent=file.name+' ('+(file.size/1024|0)+' KB)';
+  var r=new FileReader();
+  r.onload=function(e){
+    CR.bgDataUrl=e.target.result;
+    _bgDrag.tx=0;_bgDrag.ty=0;_bgDrag.scale=1;
+    var bi=document.getElementById('cr-bgimg');
+    if(bi){bi.src=CR.bgDataUrl;bi.style.display='block';bi.style.transform='';}
+    var ph=document.getElementById('cr-ph'); if(ph) ph.style.display='none';
+    var z=document.getElementById('cr-zone'); if(z){z.style.borderStyle='solid';z.style.borderColor='var(--green)';}
+    var cb=document.getElementById('cr-clear-btn'); if(cb) cb.style.display='inline-flex';
+    var ctrl=document.getElementById('cr-img-controls'); if(ctrl) ctrl.style.display='flex';
+  };
+  r.readAsDataURL(file);
+}
+
+function crClearBg() {
+  CR.bgDataUrl=null;
+  var thumb=document.getElementById('cr-bg-thumb'); if(thumb){thumb.style.display='none';thumb.style.backgroundImage='';}
+  var ph=document.getElementById('cr-bg-placeholder'); if(ph) ph.style.display='block';
+  var clr=document.getElementById('cr-bg-clear'); if(clr) clr.style.display='none';
+  var inp=document.getElementById('cr-bg-input'); if(inp) inp.value='';
+  crRenderBar();
+}
+function crBgFile(e) {
+  var f=e.target.files&&e.target.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(ev){
+    CR.bgDataUrl=ev.target.result;
+    var thumb=document.getElementById('cr-bg-thumb');
+    var ph=document.getElementById('cr-bg-placeholder');
+    var clr=document.getElementById('cr-bg-clear');
+    if(thumb){thumb.style.backgroundImage='url('+ev.target.result+')';thumb.style.display='block';}
+    if(ph) ph.style.display='none';
+    if(clr) clr.style.display='block';
+    crRenderBar();
+  };
+  r.readAsDataURL(f);
+}
+function crBgDrop(e) {
+  e.preventDefault();
+  var f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(!f) return;
+  var fakeEvt={target:{files:[f]}};
+  crBgFile(fakeEvt);
+  var drop=document.getElementById('cr-bg-drop'); if(drop) drop.style.borderColor='var(--line2)';
+}
+function crLogoFile(e) {
+  var f=e.target.files&&e.target.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(ev){
+    CR.logoDataUrl=ev.target.result;
+    var thumb=document.getElementById('cr-logo-thumb');
+    var ph=document.getElementById('cr-logo-placeholder');
+    var clr=document.getElementById('cr-logo-clear');
+    var ctrl=document.getElementById('cr-logo-controls');
+    if(thumb){thumb.style.backgroundImage='url('+ev.target.result+')';thumb.style.display='block';}
+    if(ph) ph.style.display='none';
+    if(clr) clr.style.display='block';
+    if(ctrl) ctrl.style.display='block';
+    crRenderBar();
+  };
+  r.readAsDataURL(f);
+}
+function crLogoDrop(e) {
+  e.preventDefault();
+  var f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(!f) return;
+  var fakeEvt={target:{files:[f]}};
+  crLogoFile(fakeEvt);
+  var drop=document.getElementById('cr-logo-drop'); if(drop) drop.style.borderColor='var(--line2)';
+}
+
+function crUpdateColor(val) {
+  CR.bgColor=val;
+}
+
+function crDragStart(e) {
+  if(!CR.bgDataUrl) return;
+  e.preventDefault();
+  _bgDrag.on=true;
+  var pt=e.touches?e.touches[0]:e;
+  _bgDrag.sx=pt.clientX-_bgDrag.tx; _bgDrag.sy=pt.clientY-_bgDrag.ty;
+  var pv=document.getElementById('cr-preview'); if(pv) pv.style.cursor='grabbing';
+  document.addEventListener('mousemove',crDragMove);
+  document.addEventListener('mouseup',crDragEnd);
+  document.addEventListener('touchmove',crDragMove,{passive:false});
+  document.addEventListener('touchend',crDragEnd);
+}
+function crDragMove(e) {
+  if(!_bgDrag.on) return; e.preventDefault();
+  var pt=e.touches?e.touches[0]:e;
+  _bgDrag.tx=pt.clientX-_bgDrag.sx; _bgDrag.ty=pt.clientY-_bgDrag.sy;
+  _applyBgT();
+}
+function crDragEnd() {
+  _bgDrag.on=false; CR.bgTranslateX=_bgDrag.tx; CR.bgTranslateY=_bgDrag.ty;
+  var pv=document.getElementById('cr-preview'); if(pv) pv.style.cursor='grab';
+  document.removeEventListener('mousemove',crDragMove); document.removeEventListener('mouseup',crDragEnd);
+  document.removeEventListener('touchmove',crDragMove); document.removeEventListener('touchend',crDragEnd);
+}
+function crBgZoom(delta) {
+  _bgDrag.scale=Math.max(0.2,Math.min(4,_bgDrag.scale+delta));
+  CR.bgScale=_bgDrag.scale;
+  var lbl=document.getElementById('cr-zoom-lbl'); if(lbl) lbl.textContent=Math.round(_bgDrag.scale*100)+'%';
+  _applyBgT();
+}
+function crBgReset() {
+  _bgDrag.tx=0;_bgDrag.ty=0;_bgDrag.scale=1;
+  CR.bgTranslateX=0;CR.bgTranslateY=0;CR.bgScale=1;
+  var lbl=document.getElementById('cr-zoom-lbl'); if(lbl) lbl.textContent='100%';
+  _applyBgT();
+}
+function _applyBgT() {
+  var img=document.getElementById('cr-bgimg'); if(!img) return;
+  img.style.transform='scale('+_bgDrag.scale+') translate('+(_bgDrag.tx/_bgDrag.scale)+'px,'+(_bgDrag.ty/_bgDrag.scale)+'px)';
+}
+
+function crLoadLogo(inp) {
+  if(!inp.files||!inp.files[0]) return;
+  document.getElementById('cr-lname').textContent=inp.files[0].name;
+  var r=new FileReader();
+  r.onload=function(e){
+    CR.logoDataUrl=e.target.result;
+    var li=document.getElementById('cr-logo');
+    if(li){li.src=CR.logoDataUrl;li.style.display='block';crApplyLogoPos();}
+  };
+  r.readAsDataURL(inp.files[0]);
+}
+function crClearLogo() {
+  CR.logoDataUrl=null;
+  var thumb=document.getElementById('cr-logo-thumb'); if(thumb){thumb.style.display='none';thumb.style.backgroundImage='';}
+  var ph=document.getElementById('cr-logo-placeholder'); if(ph) ph.style.display='block';
+  var clr=document.getElementById('cr-logo-clear'); if(clr) clr.style.display='none';
+  var ctrl=document.getElementById('cr-logo-controls'); if(ctrl) ctrl.style.display='none';
+  var inp=document.getElementById('cr-logo-input'); if(inp) inp.value='';
+  crRenderBar();
+}
+function crSetLogoPos(pos) { CR_LOGO_POS=pos; crApplyLogoPos(); }
+function crApplyLogoPos() {
+  var li=document.getElementById('cr-logo'); if(!li) return;
+  var m={'top-left':{top:'8px',left:'8px',bottom:'auto',right:'auto'},
+         'top-right':{top:'8px',right:'8px',bottom:'auto',left:'auto'},
+         'bot-left':{bottom:'8px',left:'8px',top:'auto',right:'auto'},
+         'bot-right':{bottom:'8px',right:'8px',top:'auto',left:'auto'}};
+  Object.assign(li.style,m[CR_LOGO_POS]||m['top-left']);
+}
+function crSetLogoSize(val) {
+  CR.logoSize=parseInt(val);
+  var lbl=document.getElementById('cr-logo-sz-lbl'); if(lbl) lbl.textContent=val+'%';
+  var li=document.getElementById('cr-logo'); if(li) li.style.height=val+'%';
+}
+function crSetLogoOp(val) {
+  var lbl=document.getElementById('cr-logo-op-lbl'); if(lbl) lbl.textContent=val+'%';
+  var li=document.getElementById('cr-logo'); if(li) li.style.opacity=val/100;
+}
+
+function crUpdateCopy() {
+  var txt=document.getElementById('cr-copy').value||'';
+  var sz=document.getElementById('cr-copy-size').value||18;
+  var col=document.getElementById('cr-copy-color').value||'#ffffff';
+  var f=W.fixtures.length?W.fixtures[0]:null;
+  var r=txt.replace(/{equipo_local}/g,f?f.teams.home.name:'Local')
+           .replace(/{equipo_visitante}/g,f?f.teams.away.name:'Visitante')
+           .replace(/{marcador}/g,f&&f.goals.home!=null?f.goals.home+' : '+f.goals.away:'0 : 0')
+           .replace(/{minuto}/g,f&&f.fixture.status.elapsed?f.fixture.status.elapsed+"'":"0'");
+  CR.copyText=txt;
+  var ov=document.getElementById('cr-copy-overlay'),ct=document.getElementById('cr-copy-text');
+  if(!ov||!ct) return;
+  if(r.trim()){ov.style.display='block';ct.textContent=r;ct.style.fontSize=sz+'px';ct.style.color=col;crSetCopyPos(CR_COPY_POS);}
+  else ov.style.display='none';
+}
+function crSetCopyPos(pos) {
+  CR_COPY_POS=pos;
+  var ov=document.getElementById('cr-copy-overlay'); if(!ov) return;
+  Object.assign(ov.style,{top:'auto',bottom:'auto',left:'auto',right:'auto',transform:'none',textAlign:'left'});
+  var pm={'top-left':{top:'10%',left:'5%'},'top-center':{top:'10%',left:'50%',transform:'translateX(-50%)',textAlign:'center'},
+          'top-right':{top:'10%',right:'5%',textAlign:'right'},'mid-left':{top:'50%',left:'5%',transform:'translateY(-50%)'},
+          'mid-center':{top:'50%',left:'50%',transform:'translate(-50%,-50%)',textAlign:'center'},
+          'mid-right':{top:'50%',right:'5%',transform:'translateY(-50%)',textAlign:'right'},
+          'bot-left':{bottom:'35%',left:'5%'},'bot-center':{bottom:'35%',left:'50%',transform:'translateX(-50%)',textAlign:'center'},
+          'bot-right':{bottom:'35%',right:'5%',textAlign:'right'}};
+  Object.assign(ov.style,pm[pos]||pm['mid-center']);
+}
+
+function crLoadCrest(side,inp) {
+  if(!inp.files||!inp.files[0]) return;
+  var r=new FileReader();
+  r.onload=function(e){
+    CR_CRESTS[side]=e.target.result;
+    var img=document.getElementById('cr-crest-'+side);
+    var ph=document.getElementById('cr-crest-'+side+'-ph');
+    if(img){img.src=e.target.result;img.style.display='block';}
+    if(ph) ph.style.display='none';
+    crRenderBar();
+  };
+  r.readAsDataURL(inp.files[0]);
+}
+
+function crSetScoreStyle(style) {
+  CR_SCORE_STYLE=style;
+  document.querySelectorAll('.cr-score-style').forEach(function(el){
+    var on=el.dataset.style===style;
+    el.style.background=on?'var(--red2)':'transparent';
+    el.style.borderColor=on?'var(--red)':'var(--line2)';
+  });
+  crRenderBar();
+}
+
+function crSetPos(pos) {
+  CR.barPos=pos;
+  var bb=document.getElementById('cr-pos-b'),bt=document.getElementById('cr-pos-t');
+  function _s(el,on){if(!el)return;el.style.background=on?'var(--red2)':'transparent';el.style.borderColor=on?'var(--red)':'var(--line2)';el.style.color=on?'var(--red)':'var(--w3)';}
+  _s(bb,pos==='bottom'); _s(bt,pos==='top');
+  crRenderBar();
+}
+function crSetSize(val) {
+  CR.barSize=parseInt(val);
+  var lbl=document.getElementById('cr-sz-lbl'); if(lbl) lbl.textContent=val+'%';
+  crRenderBar();
+}
+function crSetGrad(grad) {
+  CR_GRAD=grad;
+  document.querySelectorAll('.cr-grad-opt').forEach(function(el){
+    var on=el.dataset.grad===grad;
+    el.style.borderColor=on?'var(--red)':'var(--line)';
+    el.style.outline=on?'1px solid var(--red)':'none';
+  });
+  var cr=document.getElementById('cr-grad-custom-row'); if(cr) cr.style.display=grad==='custom'?'flex':'none';
+  crRenderBar();
+}
+
+// ── 2-ZONE PREVIEW RENDER ─────────────────────────────────────
+function crRenderBar() {
+  var preview = document.getElementById('cr-preview');
+  if (!preview) return;
+
+  var widgetPct = CR.barSize || 35;
+  var imgPct    = 100 - widgetPct;
+
+  var scCol  = _cv('cr-score-color','#FFFFFF');
+  var tmCol  = _cv('cr-team-color','#DDDDDD');
+  var lvCol  = _cv('cr-live-color','#E8001C');
+  var pos    = CR.barPos || 'bottom';
+
+  // Gradient backgrounds
+  var gradMap = {
+    dark:  'linear-gradient(160deg,#0a0a0f 0%,#16161e 100%)',
+    red:   'linear-gradient(160deg,#1a0008 0%,#3d0015 100%)',
+    blue:  'linear-gradient(160deg,#000a1f 0%,#001440 100%)',
+    green: 'linear-gradient(160deg,#001a08 0%,#003015 100%)',
+    blur:  'rgba(0,0,0,0.88)',
+    custom: null
+  };
+  var widgetBg;
+  if (CR_GRAD === 'custom') {
+    var bc = document.getElementById('cr-bar-color');
+    var bo = document.getElementById('cr-bar-opacity');
+    var hex = bc ? bc.value : '#000000';
+    var op  = bo ? bo.value/100 : 0.95;
+    var rr=parseInt(hex.slice(1,3),16), gg=parseInt(hex.slice(3,5),16), bb=parseInt(hex.slice(5,7),16);
+    widgetBg = 'rgba('+rr+','+gg+','+bb+','+op+')';
+  } else {
+    widgetBg = gradMap[CR_GRAD] || gradMap.dark;
+  }
+
+  // ── Crest circle ──
+  function crest(side, size) {
+    var s = size || '5.5cqh';
+    var src = CR_CRESTS[side];
+    return src
+      ? '<div style="width:'+s+';height:'+s+';min-width:28px;min-height:28px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.5)">'
+        + '<img src="'+src+'" style="width:75%;height:75%;object-fit:contain;filter:drop-shadow(0 1px 4px rgba(0,0,0,.7))"></div>'
+      : '<div style="width:'+s+';height:'+s+';min-width:28px;min-height:28px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center">'
+        + '<span style="font-size:2cqh;opacity:.25">🛡</span></div>';
+  }
+
+  var f    = W.fixtures.length ? W.fixtures[0] : null;
+  var hn   = f ? f.teams.home.name : 'Local';
+  var an   = f ? f.teams.away.name : 'Visitante';
+  var date = f && f.fixture && f.fixture.date ? new Date(f.fixture.date) : null;
+  var dateStr = date ? date.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'}).toUpperCase() : 'PRÓXIMO PARTIDO';
+
+  // Abbreviate team name to ~10 chars max
+  function abbr(name) {
+    if (name.length <= 10) return name;
+    // Try common abbreviation
+    var words = name.split(' ');
+    if (words.length > 1) return words[0];
+    return name.slice(0,10);
+  }
+  var hs = abbr(hn);
+  var as = abbr(an);
+
+  // Score style modifier (only for exported, preview always clean)
+  var scoreFont = 'font-family:\'Bebas Neue\',sans-serif;letter-spacing:2px;';
+
+  // ── Shared separador line between status and score ──
+  function sep() {
+    return '<div style="height:1px;background:rgba(255,255,255,.07);margin:.5cqh 0;flex-shrink:0"></div>';
+  }
+
+  // ── Status bar (top of widget) ──
+  function statusBar(dotColor, dotAnim, labelHtml, rightHtml) {
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.4cqh 0;flex-shrink:0">'
+      + '<div style="display:flex;align-items:center;gap:.7cqw">'
+      + '<span style="width:clamp(5px,.85cqh,9px);height:clamp(5px,.85cqh,9px);border-radius:50%;background:'+dotColor+';flex-shrink:0;'+(dotAnim?'animation:pulse 1.2s infinite;box-shadow:0 0 6px '+dotColor+';':'')+'display:inline-block"></span>'
+      + '<span style="font-size:clamp(6px,1cqh,10px);font-weight:800;color:'+dotColor+';letter-spacing:2px;text-transform:uppercase">'+labelHtml+'</span>'
+      + '</div>'
+      + '<span style="font-size:clamp(6px,.95cqh,9px);color:rgba(255,255,255,.28);letter-spacing:1.5px;text-transform:uppercase">'+rightHtml+'</span>'
+      + '</div>';
+  }
+
+  // ── Score row: [CREST name] [SCORE/MIN] [name CREST] ──
+  function scoreRow(hScore, aScore, minute, minColor) {
+    var mColor = minColor || lvCol;
+    return '<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:clamp(4px,2cqw,16px);flex:1;min-height:0">'
+      // ── HOME ──
+      + '<div style="display:flex;align-items:center;gap:clamp(3px,1.2cqw,10px);min-width:0">'
+      + crest('home')
+      + '<div style="font-size:clamp(8px,1.7cqh,16px);font-weight:700;color:'+tmCol+';line-height:1.15;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word">'+hs+'</div>'
+      + '</div>'
+      // ── CENTER: SCORE + MINUTE ──
+      + '<div style="display:flex;flex-direction:column;align-items:center;gap:.4cqh;flex-shrink:0">'
+      // Score
+      + '<div style="'+scoreFont+'font-size:clamp(22px,5.2cqh,60px);color:'+scCol+';line-height:.95;letter-spacing:4px;text-shadow:0 0 30px rgba(255,255,255,.08)">'+hScore+'<span style="opacity:.4;font-size:.7em;margin:0 .15em">:</span>'+aScore+'</div>'
+      // Minute pill - HERO element
+      + (minute ? '<div style="background:rgba('+_hexToRgb(mColor)+',.18);border:1.5px solid rgba('+_hexToRgb(mColor)+',.55);border-radius:6px;padding:.25cqh 1.2cqw;min-width:3.5cqh">'
+        + '<span style="font-size:clamp(8px,1.8cqh,18px);font-weight:800;color:'+mColor+';letter-spacing:1px;font-family:DM Mono,monospace">'+minute+'</span>'
+        + '</div>' : '')
+      + '</div>'
+      // ── AWAY ──
+      + '<div style="display:flex;align-items:center;justify-content:flex-end;gap:clamp(3px,1.2cqw,10px);min-width:0">'
+      + '<div style="font-size:clamp(8px,1.7cqh,16px);font-weight:700;color:'+tmCol+';line-height:1.15;text-align:right;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word">'+as+'</div>'
+      + crest('away')
+      + '</div>'
+      + '</div>';
+  }
+
+  // Helper: hex color to RGB components string
+  function _hexToRgb(hex) {
+    hex = hex.replace('#','');
+    if (hex.length===3) hex=hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+    return parseInt(hex.slice(0,2),16)+','+parseInt(hex.slice(2,4),16)+','+parseInt(hex.slice(4,6),16);
+  }
+
+  // ── WIDGET CONTENT per state ──
+  var widgetInner = '';
+
+  // Common wrapper
+  var ww = 'height:100%;display:flex;flex-direction:column;justify-content:center;padding:clamp(6px,2cqh,16px) clamp(8px,3cqw,22px);box-sizing:border-box;';
+
+  if (CR_STATE === 'live') {
+    widgetInner =
+      '<div style="'+ww+'">'
+      + statusBar(lvCol, true, 'EN VIVO', '1ER TIEMPO')
+      + sep()
+      + scoreRow('2','1','67\'', lvCol)
+      + '</div>';
+
+  } else if (CR_STATE === 'ht') {
+    widgetInner =
+      '<div style="'+ww+'">'
+      + statusBar('rgba(255,255,255,.5)', false, 'MEDIO TIEMPO', '45\'')
+      + sep()
+      + scoreRow('1','0', null)
+      + '</div>';
+
+  } else if (CR_STATE === 'ft') {
+    widgetInner =
+      '<div style="'+ww+'">'
+      + statusBar('rgba(255,255,255,.3)', false, 'RESULTADO FINAL', 'FT')
+      + sep()
+      + '<div style="opacity:.85">' + scoreRow('3','2', null) + '</div>'
+      + '</div>';
+
+  } else {
+    // PRE — próximo partido con countdown
+    widgetInner =
+      '<div style="'+ww+'text-align:center;">'
+      // Date label
+      + '<div style="font-size:clamp(6px,.9cqh,9px);letter-spacing:3px;color:rgba(255,255,255,.22);text-transform:uppercase;margin-bottom:.5cqh">'+dateStr+'</div>'
+      // Teams + vs
+      + '<div style="display:flex;align-items:center;justify-content:center;gap:clamp(5px,1.8cqw,14px);margin-bottom:.8cqh">'
+      + crest('home','5cqh')
+      + '<div style="min-width:0;max-width:30cqw">'
+      + '<div style="font-size:clamp(9px,1.8cqh,17px);font-weight:700;color:'+tmCol+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+hs+'</div>'
+      + '</div>'
+      + '<div style="font-size:clamp(8px,1.2cqh,12px);color:rgba(255,255,255,.2);padding:0 .5cqw;font-weight:300">VS</div>'
+      + '<div style="min-width:0;max-width:30cqw">'
+      + '<div style="font-size:clamp(9px,1.8cqh,17px);font-weight:700;color:'+tmCol+';text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+as+'</div>'
+      + '</div>'
+      + crest('away','5cqh')
+      + '</div>'
+      // Countdown — BIG
+      + '<div id="cr-cd-val" style="font-size:clamp(14px,3.8cqh,44px);font-weight:900;color:'+scCol+';letter-spacing:4px;line-height:1;font-family:\'DM Mono\',monospace">--:--:--</div>'
+      + '<div style="font-size:clamp(5px,.8cqh,8px);color:rgba(255,255,255,.15);letter-spacing:2px;margin-top:.4cqh;text-transform:uppercase">Faltan para el partido</div>'
+      + '</div>';
+    if (f && f.fixture && f.fixture.date) setTimeout(function(){ crTickPre(f.fixture.date); }, 50);
+  }
+
+  // ── Glow border when live ──
+  var glowStyle = CR_STATE === 'live'
+    ? 'box-shadow:0 0 0 2px '+lvCol+',0 0 24px '+lvCol+'44;'
+    : '';
+
+  var sepColor = CR_STATE === 'live' ? lvCol : 'rgba(255,255,255,.07)';
+
+  // ── Build the two zones inside preview ──
+  var imgZoneStyle = 'position:absolute;left:0;right:0;overflow:hidden;'
+    + (pos === 'top' ? 'bottom:0;' : 'top:0;')
+    + 'height:'+imgPct+'%;';
+
+  var wgtZoneStyle = 'position:absolute;left:0;right:0;overflow:hidden;container-type:size;'
+    + (pos === 'top' ? 'top:0;' : 'bottom:0;')
+    + 'height:'+widgetPct+'%;'
+    + 'background:'+widgetBg+';'
+    + glowStyle
+    + 'border-top:'+(pos!=='top'?'2px solid '+sepColor:'none')+';'
+    + 'border-bottom:'+(pos==='top'?'2px solid '+sepColor:'none')+';';
+
+  // Background in image zone
+  var bgContent = '';
+  if (CR.bgDataUrl) {
+    var t = 'scale('+(CR.bgScale||1)+') translate('+((CR.bgTranslateX||0)/(CR.bgScale||1))+'px,'+((CR.bgTranslateY||0)/(CR.bgScale||1))+'px)';
+    bgContent = '<img src="'+CR.bgDataUrl+'" style="width:100%;height:100%;object-fit:cover;transform-origin:center;transform:'+t+'">';
+  } else {
+    bgContent = '<div style="width:100%;height:100%;background:'+CR.bgColor+'"></div>';
+  }
+
+  var aiOverlay = CR.aiOverlayHtml
+    ? '<div style="position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden">'+CR.aiOverlayHtml+'</div>'
+    : '';
+
+  var logoHtml = '';
+  if (CR.logoDataUrl) {
+    var lpos = CR_LOGO_POS || 'top-left';
+    var lpStyle = 'position:absolute;z-index:3;height:'+(CR.logoSize||10)+'%;max-height:80px;width:auto;object-fit:contain;filter:drop-shadow(0 1px 8px rgba(0,0,0,.8));opacity:'+(CR.logoOpacity!=null?CR.logoOpacity/100:1)+';';
+    if (lpos==='top-left')     lpStyle += 'top:8%;left:5%;';
+    else if (lpos==='top-right')  lpStyle += 'top:8%;right:5%;';
+    else if (lpos==='bot-left')   lpStyle += 'bottom:8%;left:5%;';
+    else                          lpStyle += 'bottom:8%;right:5%;';
+    logoHtml = '<img src="'+CR.logoDataUrl+'" style="'+lpStyle+'">';
+  }
+
+  var copyHtml = '';
+  if (CR.copyText) {
+    var cpEl  = document.getElementById('cr-copy-size');
+    var cpClr = document.getElementById('cr-copy-color');
+    var cpSz  = cpEl ? cpEl.value : 18;
+    var cpCol = cpClr ? cpClr.value : '#ffffff';
+    var posMap = {
+      'top-left':'top:8%;left:5%;text-align:left',
+      'top-center':'top:8%;left:50%;transform:translateX(-50%);text-align:center',
+      'top-right':'top:8%;right:5%;text-align:right',
+      'mid-left':'top:50%;transform:translateY(-50%);left:5%;text-align:left',
+      'mid-center':'top:50%;left:50%;transform:translate(-50%,-50%);text-align:center',
+      'mid-right':'top:50%;transform:translateY(-50%);right:5%;text-align:right',
+      'bot-left':'bottom:8%;left:5%;text-align:left',
+      'bot-center':'bottom:8%;left:50%;transform:translateX(-50%);text-align:center',
+      'bot-right':'bottom:8%;right:5%;text-align:right'
+    };
+    var cpPos = posMap[CR_COPY_POS] || posMap['mid-center'];
+    copyHtml = '<div style="position:absolute;z-index:4;'+cpPos+';font-size:'+(cpSz/10)+'cqh;color:'+cpCol+';font-weight:700;text-shadow:0 2px 12px rgba(0,0,0,.8);max-width:90%;line-height:1.3">'+CR.copyText+'</div>';
+  }
+
+  // ── Inject into preview ──
+  preview.innerHTML =
+    '<div style="'+imgZoneStyle+'container-type:size;">'
+    + bgContent + aiOverlay + logoHtml + copyHtml
+    + '</div>'
+    + '<div id="cr-widget-zone" style="'+wgtZoneStyle+'">'
+    + widgetInner
+    + '</div>';
+
+  var stEl = document.getElementById('cr-status');
+  if (stEl) {
+    var msgs = {pre:'Pre-partido · countdown activo', live:'En vivo · marcador actualizándose', ht:'Medio tiempo', ft:'Partido finalizado'};
+    stEl.textContent = f ? msgs[CR_STATE] : 'Sin partido — elige uno en el paso 2';
+  }
+}
+
+
+
+function _cv(id,fb){var el=document.getElementById(id);return el?el.value:fb;}
+function crTickPre(ds){var el=document.getElementById('cr-cd-val');if(!el)return;var d=new Date(ds)-Date.now();if(d<=0){el.textContent='\u00a1Ya!';return;}var h=Math.floor(d/3600000),m=Math.floor((d%3600000)/60000),s=Math.floor((d%60000)/1000);el.textContent=(h>0?h+'h ':'')+m+'m '+s+'s';setTimeout(function(){crTickPre(ds);},1000);}
+function crUpdateName(){W.name=document.getElementById('cr-name').value||'Nueva campa\u00f1a';}
+function crSetScreenRes(val){var p=val.split('x');W.screenW=parseInt(p[0])||420;W.screenH=parseInt(p[1])||588;var pv=document.getElementById('cr-preview');if(pv){var sc=Math.min(260/W.screenW,280/W.screenH);pv.style.width=Math.round(W.screenW*sc)+'px';pv.style.height=Math.round(W.screenH*sc)+'px';}var lbl=document.getElementById('cr-res-preview');if(lbl){var g=_gcd(W.screenW,W.screenH);lbl.textContent=W.screenW+' \u00d7 '+W.screenH+' px \u00b7 '+W.screenW/g+':'+W.screenH/g;}crRenderBar();}
+function _gcd(a,b){return b===0?a:_gcd(b,a%b);}
+function s3Next(){wProg(2); buildStep2();}
+
+// ── AI Design Generator ─────────────────────────────────────
+var _aiStyle = 'sport';
+
+function aiStyle(el) {
+  _aiStyle = el.dataset.style;
+}
+function aiToggle() {
+  var p = document.getElementById('ai-panel');
+  var btn = document.getElementById('ai-toggle-btn');
+  if (!p) return;
+  var expanded = p.style.display === 'flex';
+  p.style.display = expanded ? 'none' : 'flex';
+  p.style.flexDirection = 'column';
+  if (btn) btn.textContent = expanded ? 'Expandir' : 'Contraer';
+}
+
+async function aiGenerate() {
+  var brand  = (document.getElementById('ai-brand').value || '').trim();
+  var copy   = (document.getElementById('ai-copy').value  || '').trim();
+  var c1     = document.getElementById('ai-color1').value;
+  var c2     = document.getElementById('ai-color2').value;
+  var c3     = document.getElementById('ai-color3').value;
+  var f      = W.fixtures.length ? W.fixtures[0] : null;
+  var home   = f ? f.teams.home.name : 'Equipo Local';
+  var away   = f ? f.teams.away.name : 'Equipo Visitante';
+  var nw     = W.screenW || 420;
+  var nh     = W.screenH || 588;
+
+  if (!brand) { toast('Escribe el nombre de la marca','te'); return; }
+  if (!CFG.ank) { toast('Configura tu API Key de Anthropic en ⚙️ Configuración','te'); return; }
+
+  var btn = document.getElementById('ai-gen-btn');
+  var stEl = document.getElementById('ai-status');
+  var resEl = document.getElementById('ai-result');
+  btn.disabled = true; btn.textContent = '⏳ Generando...';
+  stEl.style.display = 'block';
+  stEl.textContent = 'Diseñando creativo para ' + brand + '...';
+  resEl.style.display = 'none';
+
+  var _aiStyle2 = (document.getElementById('ai-style-sel')||{}).value || _aiStyle;
+  var styleDesc = {
+    sport:   'deportivo, dinámico, bold, colores intensos, energía máxima, tipografía impactante, diagonales, formas agresivas',
+    premium: 'premium, lujoso, elegante, dorado, tipografía serif fina, espaciado amplio, minimal con detalles ricos',
+    minimal: 'minimalista, clean, mucho espacio en blanco o negro, tipografía geométrica sans-serif, sin ornamentos',
+    neon:    'neón, cyberpunk, ciudad de noche, brillos de color, efectos glow, oscuro con acentos luminosos'
+  }[_aiStyle2] || 'deportivo';
+
+  var logoB64 = CR.logoDataUrl ? CR.logoDataUrl.split(',')[1] : null;
+  var logoNote = logoB64 ? 'El operador subió un logo (disponible como base64 en CAMPAIGN.logoDataUrl).' : 'No hay logo subido, crea el diseño basado en el nombre de la marca.';
+
+  var prompt = 'Eres un diseñador experto en DOOH (Digital Out-of-Home) para pantallas de alta visibilidad. '
+    + 'Genera el CSS y HTML para el fondo y overlay de una campaña DOOH de ' + brand + '.\n\n'
+    + 'BRIEF:\n'
+    + '- Marca: ' + brand + '\n'
+    + '- Copy: ' + (copy || 'Sin copy específico, usa algo genérico de la marca') + '\n'
+    + '- Colores: primario=' + c1 + ', secundario=' + c2 + ', acento=' + c3 + '\n'
+    + '- Estilo: ' + styleDesc + '\n'
+    + '- Resolución: ' + nw + 'x' + nh + 'px\n'
+    + '- Partido: ' + home + ' vs ' + away + '\n'
+    + '- ' + logoNote + '\n\n'
+    + 'GENERA:\n'
+    + 'Devuelve SOLO un objeto JSON con esta estructura exacta (sin markdown, sin explicación):\n'
+    + '{\n'
+    + '  "bgCss": "CSS para el background del #stage (gradiente, patrón, color). Solo propiedades CSS válidas como string para style inline del div #bg-overlay",\n'
+    + '  "overlayHtml": "HTML del overlay sobre la imagen (copy de la marca, elementos decorativos). Usar position:absolute, z-index 6, pointer-events:none. Sin scripts.",\n'
+    + '  "barColor1": "color hex del primer color del gradiente de la barra de marcador",\n'
+    + '  "barColor2": "color hex del segundo color",\n'
+    + '  "scoreColor": "color hex del marcador",\n'
+    + '  "teamColor": "color hex de nombres de equipos",\n'
+    + '  "liveColor": "color hex del acento LIVE",\n'
+    + '  "bgColor": "color hex sólido para fondo si no hay imagen",\n'
+    + '  "copyForDisplay": "el copy final procesado de máximo 8 palabras para mostrar en pantalla"\n'
+    + '}\n\n'
+    + 'El overlayHtml debe ser HTML auto-contenido, con fuentes de Google Fonts via @import si es necesario, '
+    + 'posicionado con position:absolute, diseño premium que deje la zona inferior libre para el marcador. '
+    + 'Sé creativo y genera algo visualmente impresionante para DOOH de alto impacto.';
+
+  try {
+    var msgs = [{role:'user', content: prompt}];
+    // If logo available, include as image
+    if (logoB64 && CR.logoDataUrl.startsWith('data:image/')) {
+      var mtype = CR.logoDataUrl.split(';')[0].split(':')[1];
+      msgs = [{role:'user', content:[
+        {type:'image', source:{type:'base64', media_type:mtype, data:logoB64}},
+        {type:'text', text: prompt + '\n\nEl logo de la marca está en la imagen adjunta.'}
+      ]}];
+    }
+
+    var resp = await fetch('/api/claude', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', 'x-anthropic-key': CFG.ank||''},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: 'You are a DOOH creative designer. Respond with ONLY a valid JSON object. No markdown, no explanation, no text before or after the JSON. Start your response with { and end with }.',
+        messages: msgs
+      })
+    });
+
+    var data = await resp.json();
+    // Show raw response in status for debugging
+    if (!data.content) {
+      var errMsg = data.error ? data.error.message : JSON.stringify(data);
+      throw new Error('API error: ' + errMsg);
+    }
+    var text = data.content[0] ? data.content[0].text : '';
+    stEl.textContent = 'Procesando diseño...';
+    // Clean markdown fences
+    text = text.replace(/```json/g,'').replace(/```/g,'').trim();
+    var design;
+    // Try 1: direct parse
+    try { design = JSON.parse(text); }
+    catch(e1) {
+      // Try 2: extract first { ... }
+      var m = text.match(/\{[\s\S]*\}/);
+      if (m) {
+        try { design = JSON.parse(m[0]); }
+        catch(e2) {
+          // Try 3: extract last complete JSON object
+          var chunks = text.split('\n');
+          var jsonStr = '';
+          var depth = 0;
+          for (var ci=0; ci<chunks.length; ci++) {
+            for (var cc=0; cc<chunks[ci].length; cc++) {
+              if(chunks[ci][cc]==='{') depth++;
+              if(chunks[ci][cc]==='}') depth--;
+            }
+            jsonStr += chunks[ci];
+            if (depth === 0 && jsonStr.trim().startsWith('{')) break;
+          }
+          try { design = JSON.parse(jsonStr); }
+          catch(e3) { throw new Error('Respuesta inesperada de IA. Intenta de nuevo.'); }
+        }
+      } else {
+        throw new Error('Respuesta inesperada de IA. Intenta de nuevo.');
+      }
+    }
+
+    // Apply design to preview
+    _aiApplyDesign(design);
+
+    stEl.style.display = 'none';
+    resEl.style.display = 'block';
+    toast('Creativo generado ✓', 'ts', 4000);
+
+  } catch(e) {
+    stEl.textContent = '⚠️ Error: ' + e.message + '. Verifica que la API key de Anthropic esté configurada.';
+    toast('Error generando creativo', 'te');
+  }
+
+  btn.disabled = false; btn.innerHTML = '<span>✨</span> Generar Creativo';
+}
+
+function _aiApplyDesign(d) {
+  // Apply bg color
+  if (d.bgColor) {
+    CR.bgColor = d.bgColor;
+    var bgEl = document.getElementById('cr-bg'); if(bgEl) bgEl.style.background = d.bgColor;
+    var colorEl = document.getElementById('cr-color'); if(colorEl) colorEl.value = d.bgColor;
+  }
+
+  // Apply overlay HTML
+  var prev = document.getElementById('cr-preview');
+  var existOverlay = document.getElementById('ai-overlay-el');
+  if (existOverlay) existOverlay.remove();
+  if (d.overlayHtml && prev) {
+    var ov = document.createElement('div');
+    ov.id = 'ai-overlay-el';
+    ov.style.cssText = 'position:absolute;inset:0;z-index:6;pointer-events:none;overflow:hidden';
+    ov.innerHTML = d.overlayHtml;
+    prev.appendChild(ov);
+    CR.aiOverlayHtml = d.overlayHtml;
+  }
+
+  // Apply bar colors
+  if (d.barColor1) {
+    CR_GRAD = 'custom';
+    var bc = document.getElementById('cr-bar-color'); if(bc) bc.value = d.barColor1;
+    document.querySelectorAll('.cr-grad-opt').forEach(function(el){el.style.borderColor='var(--line)';el.style.outline='none';});
+  }
+  if (d.scoreColor) { var sc=document.getElementById('cr-score-color'); if(sc) sc.value=d.scoreColor; }
+  if (d.teamColor)  { var tc=document.getElementById('cr-team-color');  if(tc) tc.value=d.teamColor; }
+  if (d.liveColor)  { var lc=document.getElementById('cr-live-color');  if(lc) lc.value=d.liveColor; }
+
+  crRenderBar();
+}
+
+function aiClear() {
+  var ov = document.getElementById('ai-overlay-el'); if(ov) ov.remove();
+  CR.aiOverlayHtml = null;
+  document.getElementById('ai-result').style.display = 'none';
+  document.getElementById('ai-status').style.display = 'none';
+}
+
+// ── STEP 4: Export ────────────────────────────────────────────
+function renderExport() {
+  // Draw preview canvas
+  var ec = document.getElementById('exp-canvas');
+  if (ec) {
+    var ctx = ec.getContext('2d');
+    ec.width=160; ec.height=224;
+    ctx.fillStyle = CR.bgColor||'#111';
+    ctx.fillRect(0,0,160,224);
+    if (CR.bgDataUrl) {
+      var img = new Image();
+      img.onload = function() {
+        ctx.drawImage(img,0,0,160,224);
+        drawCanvasBar(ctx);
+      };
+      img.src = CR.bgDataUrl;
+    } else { drawCanvasBar(ctx); }
+  }
+  // Summary
+  var f = W.fixtures.length ? W.fixtures : [];
+  var fixStr = f.map(function(x){ return x.teams.home.name+' vs '+x.teams.away.name; }).join(', ')||'—';
+  document.getElementById('exp-sum').innerHTML =
+    '<div style="margin-bottom:4px"><span style="color:var(--w4);font-size:10px">CAMPAÑA · </span>'+( document.getElementById('cr-name').value||'—')+'</div>'+
+    '<div style="margin-bottom:4px"><span style="color:var(--w4);font-size:10px">ACTIVADORES · </span>'+([...W.acts].join(', ')||'—')+'</div>'+
+    '<div><span style="color:var(--w4);font-size:10px">PARTIDOS · </span>'+fixStr+'</div>';
+  // Config preview
+  document.getElementById('cfg-preview').value = buildConfig();
+}
+
+function drawCanvasBar(ctx) {
+  var pos = CR.barPos||'bottom';
+  var g = ctx.createLinearGradient(0,pos==='top'?0:224,0,pos==='top'?80:144);
+  g.addColorStop(0,'rgba(0,0,0,.95)'); g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g;
+  if(pos==='top') ctx.fillRect(0,0,160,80); else ctx.fillRect(0,144,160,80);
+  ctx.fillStyle='#fff'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center';
+  var f=W.fixtures.length?W.fixtures[0]:null;
+  var ty=pos==='top'?32:184;
+  ctx.fillText(f?(f.goals.home+' : '+f.goals.away):'— : —',80,ty);
+  ctx.font='8px sans-serif'; ctx.fillStyle='rgba(255,255,255,.5)';
+  ctx.fillText(f?(f.teams.home.name+' vs '+f.teams.away.name):'Local vs Visitante',80,pos==='top'?46:200);
+}
+
+function buildConfig() {
+  var name = document.getElementById('cr-name').value || 'Robin Campaign';
+  var fxArr = JSON.stringify(W.fixtures.map(function(f){
+    return {id:f.fixture.id, home:f.teams.home.name, away:f.teams.away.name, date:f.fixture.date};
+  }));
+  var cd = W.cdDate ? W.cdDate.toISOString() : '';
+  var cdMsg = (document.getElementById('cd-msg')||{value:''}).value||'';
+  var wxCity = W.wxCity;
+  return [
+    'const CAMPAIGN = {',
+    '  brand: "'+name+'",',
+    '  refreshSecs: '+CFG.ref+',',
+    '  bgDataUrl: '+(CR.bgDataUrl?'"'+CR.bgDataUrl.substring(0,30)+'..."':'null')+',',
+    '  logoDataUrl: '+(CR.logoDataUrl?'"'+CR.logoDataUrl.substring(0,30)+'..."':'null')+',',
+    '  barPos: "'+CR.barPos+'",',
+    '  barSize: '+CR.barSize+',',
+    '  qrUrl: "'+CR.qrUrl+'",',
+    '  gradient: "'+(CR_GRAD||'dark')+'",',
+    '  scoreColor: "'+(_cv('cr-score-color','#ffffff'))+'",',
+    '  teamColor: "'+(_cv('cr-team-color','#ffffff'))+'",',
+    '  liveColor: "'+(_cv('cr-live-color','#E8001C'))+'",',
+    '  homeCrest: '+(CR_CRESTS.home?'"'+CR_CRESTS.home+'"':'null')+',',
+    '  awayCrest: '+(CR_CRESTS.away?'"'+CR_CRESTS.away+'"':'null')+',' ,
+    '  football: {',
+    '    enabled: '+W.acts.has('deportes')+',',
+    '    apiKey: "'+CFG.fk+'",',
+    '    switchSecs: 15,',
+    '    fixtures: '+fxArr+',',
+    '  },',
+    '  weather: {',
+    '    enabled: '+W.acts.has('clima')+',',
+    '    apiKey: "'+CFG.wk+'",',
+    '    city: "'+wxCity+'",',
+    '  },',
+    '  countdown: {',
+    '    enabled: '+W.acts.has('countdown')+',',
+    '    targetDate: "'+cd+'",',
+    '    message: "'+cdMsg+'",',
+    '  },',
+    '};'
+  ].join('\n');
+}
+
+function buildConfigFull() {
+  var cfg = buildConfig();
+  // Replace truncated values with full base64
+  cfg = cfg.replace(/"data:image[^"]*\.\.\."/, CR.bgDataUrl ? '"'+CR.bgDataUrl+'"' : 'null');
+  cfg = cfg.replace(/"data:image[^"]*\.\.\."/, CR.logoDataUrl ? '"'+CR.logoDataUrl+'"' : 'null');
+  // Actually rebuild with full values
+  var name = document.getElementById('cr-name').value || 'Robin Campaign';
+  var fxArr = JSON.stringify(W.fixtures.map(function(f){
+    return {id:f.fixture.id, home:f.teams.home.name, away:f.teams.away.name, date:f.fixture.date};
+  }));
+  var cd = W.cdDate ? W.cdDate.toISOString() : '';
+  var cdMsg = (document.getElementById('cd-msg')||{value:''}).value||'';
+  return [
+    'const CAMPAIGN = {',
+    '  brand: "'+name+'",',
+    '  refreshSecs: '+CFG.ref+',',
+    '  bgDataUrl: '+(CR.bgDataUrl?'"'+CR.bgDataUrl+'"':'null')+',',
+    '  logoDataUrl: '+(CR.logoDataUrl?'"'+CR.logoDataUrl+'"':'null')+',',
+    '  barPos: "'+CR.barPos+'",',
+    '  barSize: '+CR.barSize+',',
+    '  qrUrl: "'+CR.qrUrl+'",',
+    '  gradient: "'+(CR_GRAD||'dark')+'",',
+    '  scoreColor: "'+(_cv('cr-score-color','#ffffff'))+'",',
+    '  teamColor: "'+(_cv('cr-team-color','#ffffff'))+'",',
+    '  liveColor: "'+(_cv('cr-live-color','#E8001C'))+'",',
+    '  homeCrest: '+(CR_CRESTS.home?'"'+CR_CRESTS.home+'"':'null')+',',
+    '  awayCrest: '+(CR_CRESTS.away?'"'+CR_CRESTS.away+'"':'null')+',' ,
+    '  football: {',
+    '    enabled: '+W.acts.has('deportes')+',',
+    '    apiKey: "'+CFG.fk+'",',
+    '    switchSecs: 15,',
+    '    fixtures: '+fxArr+',',
+    '  },',
+    '  weather: {',
+    '    enabled: '+W.acts.has('clima')+',',
+    '    apiKey: "'+CFG.wk+'",',
+    '    city: "'+W.wxCity+'",',
+    '  },',
+    '  countdown: {',
+    '    enabled: '+W.acts.has('countdown')+',',
+    '    targetDate: "'+cd+'",',
+    '    message: "'+cdMsg+'",',
+    '  },',
+    '};'
+  ].join('\n');
+}
+
+function buildMotor() {
+  var cfg    = buildConfigFull();
+  var nw     = W.screenW || 420;
+  var nh     = W.screenH || 588;
+  var wPct   = CR.barSize || 35;   // widget zone %
+  var iPct   = 100 - wPct;         // image zone %
+  var pos    = CR.barPos || 'bottom';
+
+  // Background in image zone
+  var bgT = 'scale('+(CR.bgScale||1)+') translate('+((CR.bgTranslateX||0)/(CR.bgScale||1))+'px,'+((CR.bgTranslateY||0)/(CR.bgScale||1))+'px)';
+  var bgHtml = CR.bgDataUrl
+    ? '<img src="'+CR.bgDataUrl+'" style="width:100%;height:100%;object-fit:cover;transform-origin:center;transform:'+bgT+'">'
+    : '<div style="width:100%;height:100%;background:'+CR.bgColor+'"></div>';
+
+  var logoHtml = '';
+  if (CR.logoDataUrl) {
+    var lpos = CR_LOGO_POS || 'top-left';
+    var lp = 'position:absolute;z-index:3;height:'+(CR.logoSize||10)+'%;max-height:80px;width:auto;object-fit:contain;filter:drop-shadow(0 1px 8px rgba(0,0,0,.8));opacity:'+(CR.logoOpacity!=null?CR.logoOpacity/100:1)+';';
+    if(lpos==='top-left')    lp+='top:8%;left:5%;';
+    else if(lpos==='top-right')  lp+='top:8%;right:5%;';
+    else if(lpos==='bot-left')   lp+='bottom:8%;left:5%;';
+    else                         lp+='bottom:8%;right:5%;';
+    logoHtml = '<img src="'+CR.logoDataUrl+'" style="'+lp+'">';
+  }
+
+  var aiOverlayHtml = CR.aiOverlayHtml
+    ? '<div style="position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden">'+CR.aiOverlayHtml+'</div>'
+    : '';
+
+  var fitJS = 'var _NW='+nw+',_NH='+nh+';'
+    + 'function _fit(){'
+    + 'var sc=Math.min(innerWidth/_NW,innerHeight/_NH),'
+    + 'el=document.getElementById("wrap");'
+    + 'if(el){el.style.width=Math.round(_NW*sc)+"px";el.style.height=Math.round(_NH*sc)+"px";}}'
+    + '_fit();addEventListener("resize",_fit);';
+
+  var imgZoneStyle = pos==='top'
+    ? 'position:absolute;left:0;right:0;bottom:0;height:'+iPct+'%;overflow:hidden;container-type:size'
+    : 'position:absolute;left:0;right:0;top:0;height:'+iPct+'%;overflow:hidden;container-type:size';
+
+  var wgtZoneStyle = pos==='top'
+    ? 'position:absolute;left:0;right:0;top:0;height:'+wPct+'%;overflow:hidden;container-type:size'
+    : 'position:absolute;left:0;right:0;bottom:0;height:'+wPct+'%;overflow:hidden;container-type:size';
+
+  var name = (document.getElementById('cr-name')||{value:'Campaign'}).value || 'Campaign';
+
+  return '<!DOCTYPE html>\n<html lang="es"><head>\n'
+    + '<meta charset="UTF-8">\n'
+    + '<meta name="viewport" content="width=device-width,initial-scale=1.0">\n'
+    + '<title>'+name+'</title>\n'
+    + '<style>\n'
+    + '*{margin:0;padding:0;box-sizing:border-box}\n'
+    + 'html,body{width:100%;height:100%;overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center}\n'
+    + '#wrap{position:relative;flex-shrink:0}\n'
+    + '.rc{display:inline-block;width:7px;height:10px;background:#E8001C;border-radius:1px;margin:0 1px}\n'
+    + '@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}\n'
+    + '</style>\n'
+    + '<script>'+fitJS+'<\/script>\n'
+    + '</head><body>\n'
+    + '<div id="wrap" style="width:'+nw+'px;height:'+nh+'px;position:relative;overflow:hidden">\n'
+    + '  <div id="img-zone" style="'+imgZoneStyle+'">\n'
+    + '    '+bgHtml+'\n'
+    + (CR.logoDataUrl ? '    '+logoHtml+'\n' : '')
+    + (CR.aiOverlayHtml ? '    '+aiOverlayHtml+'\n' : '')
+    + '  </div>\n'
+    + '  <div id="bar" style="'+wgtZoneStyle+'"></div>\n'
+    + '</div>\n'
+    + '<script>\n'+cfg+'\n'+motorJS()+'\n<\/script>\n'
+    + '</body></html>-e '
+}
+
+function motorJS() {
+  // Motor JS -- returned as string to be embedded in campaign HTML
+  // Uses btoa encoding to avoid all escaping issues
+  var code = [
+    'var LIVE={home:null,away:null,sH:null,sA:null,min:null,st:"NS",rcH:0,rcA:0};',
+    'var _cdT=null;',
+    'var ST={"1H":"1er Tiempo","2H":"2do Tiempo","HT":"Medio Tiempo","ET":"Pr\\u00f3rroga","P":"Penales","FT":"Finalizado","AET":"Finalizado"};',
+    'function cards(n){var s="";for(var i=0;i<n;i++)s+=\'<span style="display:inline-block;width:7px;height:10px;background:#E8001C;border-radius:1px;margin:0 1px"></span>\';return s;}',
+    'function fmtMin(e,x){if(e==null)return"\\u2014";if(x&&x>0){var b=e>45?90:45;return b+"+"+(e-b)+"\\u2019";}return e+"\\u2019";}',
+    'function setBarPos(){',
+    '  var bar=document.getElementById("bar");',
+    '  if(!bar) return;',
+    '  // Bar is already positioned as a zone in the 2-zone layout',
+    '  // Apply gradient background',
+    '  var grad=CAMPAIGN.gradient||"dark";',
+    '  var bgs={dark:"linear-gradient(160deg,#0a0a0f,#16161e)",red:"linear-gradient(160deg,#1a0008,#3d0015)",blue:"linear-gradient(160deg,#000a1f,#001440)",green:"linear-gradient(160deg,#001a08,#003015)",blur:"rgba(0,0,0,0.85)"};',
+    '  bar.style.background=bgs[grad]||bgs.dark;',
+    '}',
+    'function renderBar(){',
+    '  var bar=document.getElementById("bar");if(!bar)return;',
+    '  var st=LIVE.st,isLive=["1H","2H","ET","P"].indexOf(st)>=0,isHT=st==="HT",isFT=["FT","AET"].indexOf(st)>=0;',
+    '  var lvC=CAMPAIGN.liveColor||"#E8001C";',
+    '  var scC=CAMPAIGN.scoreColor||"#ffffff";',
+    '  var tmC=CAMPAIGN.teamColor||"#dddddd";',
+    '  var bgs={dark:"linear-gradient(160deg,#0a0a0f,#16161e)",red:"linear-gradient(160deg,#1a0008,#3d0015)",blue:"linear-gradient(160deg,#000a1f,#001440)",green:"linear-gradient(160deg,#001a08,#003015)",blur:"rgba(0,0,0,0.88)"};',
+    '  bar.style.background=bgs[CAMPAIGN.gradient]||bgs.dark;',
+    '  bar.style.boxShadow=isLive?"0 0 0 2px "+lvC+",0 0 24px "+lvC+"44":"none";',
+    '  function cst(s){var n=s||"";return n.length>10?n.split(" ")[0]:n;}',
+    '  function h2r(h){h=h.replace("#","");if(h.length===3)h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];return parseInt(h.slice(0,2),16)+","+parseInt(h.slice(2,4),16)+","+parseInt(h.slice(4,6),16);}',
+    '  function crest(side){',
+    '    var src=CAMPAIGN[side+"Crest"];',
+    '    var sty="width:5.5cqh;height:5.5cqh;min-width:28px;min-height:28px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;overflow:hidden;box-sizing:border-box;";',
+    '    return src?"<div style=\\""+sty+"\\"><img src=\\""+src+"\\" style=\\"width:75%;height:75%;object-fit:contain;filter:drop-shadow(0 1px 4px rgba(0,0,0,.7))\\"></div>":"<div style=\\""+sty+"\\"></div>";',
+    '  }',
+    '  function sep(){return "<div style=\\"height:1px;background:rgba(255,255,255,.07);margin:.5cqh 0;flex-shrink:0\\"></div>";}',
+    '  function statusBar(dotC,anim,lbl,rgt){',
+    '    return "<div style=\\"display:flex;align-items:center;justify-content:space-between;padding:.4cqh 0;flex-shrink:0\\">"',
+    '      +"<div style=\\"display:flex;align-items:center;gap:.7cqw\\"><span style=\\"width:clamp(5px,.85cqh,9px);height:clamp(5px,.85cqh,9px);border-radius:50%;background:"+dotC+";flex-shrink:0;"+(anim?"animation:pulse 1.2s infinite;box-shadow:0 0 6px "+dotC+";":"")+"display:inline-block\\"></span>"',
+    '      +"<span style=\\"font-size:clamp(6px,1cqh,10px);font-weight:800;color:"+dotC+";letter-spacing:2px;text-transform:uppercase\\">"+lbl+"</span></div>"',
+    '      +"<span style=\\"font-size:clamp(6px,.95cqh,9px);color:rgba(255,255,255,.28);letter-spacing:1.5px;text-transform:uppercase\\">"+rgt+"</span></div>";',
+    '  }',
+    '  function scoreRow(hS,aS,min,mC){',
+    '    var rgb=h2r(mC||lvC);',
+    '    var hn=LIVE.home||"Local";var an=LIVE.away||"Visitante";',
+    '    var row="<div style=\\"display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:clamp(4px,2cqw,14px);flex:1;min-height:0;\\">";',
+    '    row+=crest("home")+"<div style=\\"font-size:clamp(8px,1.7cqh,16px);font-weight:700;color:"+tmC+";line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:.5cqw\\">"+cst(hn)+"</div></div>";',
+    '    row="<div style=\\"display:flex;align-items:center;gap:clamp(3px,1.2cqw,10px);min-width:0\\">"+crest("home")+"<div style=\\"font-size:clamp(8px,1.7cqh,16px);font-weight:700;color:"+tmC+";line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\\">"+cst(hn)+"</div></div>";',
+    '    var scoreFont="font-family:\'Bebas Neue\',sans-serif;";',
+    '    var center="<div style=\\"display:flex;flex-direction:column;align-items:center;gap:.4cqh;flex-shrink:0\\">"',
+    '      +"<div style=\\""+scoreFont+"font-size:clamp(22px,5.2cqh,58px);color:"+scC+";line-height:.95;letter-spacing:4px;text-shadow:0 0 30px rgba(255,255,255,.08)\\">"+hS+"<span style=\\"opacity:.35;font-size:.7em;margin:0 .15em\\">:</span>"+aS+"</div>"',
+    '      +(min?"<div style=\\"background:rgba("+rgb+",.18);border:1.5px solid rgba("+rgb+",.55);border-radius:6px;padding:.25cqh 1.2cqw;text-align:center\\"><span style=\\"font-size:clamp(8px,1.8cqh,18px);font-weight:800;color:"+(mC||lvC)+";letter-spacing:1px;font-family:DM Mono,monospace\\">"+min+"</span></div>":"")',
+    '      +"</div>";',
+    '    var away="<div style=\\"display:flex;align-items:center;justify-content:flex-end;gap:clamp(3px,1.2cqw,10px);min-width:0\\"><div style=\\"font-size:clamp(8px,1.7cqh,16px);font-weight:700;color:"+tmC+";line-height:1.15;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\\">"+cst(an)+"</div>"+crest("away")+"</div>";',
+    '    return "<div style=\\"display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:clamp(4px,2cqw,14px);flex:1;min-height:0;\\">"+row+center+away+"</div>";',
+    '  }',
+    '  var ww="height:100%;display:flex;flex-direction:column;justify-content:center;padding:clamp(6px,2cqh,16px) clamp(8px,3cqw,22px);box-sizing:border-box;";',
+    '  var html="";',
+    '  if(isLive&&LIVE.home){',
+    '    html="<div style=\\""+ww+"\\">"+statusBar(lvC,true,"EN VIVO","1ER TIEMPO")+sep()+scoreRow(LIVE.sH,LIVE.sA,LIVE.min,lvC)+"</div>";',
+    '  } else if(isHT&&LIVE.home){',
+    '    html="<div style=\\\""+ww+"\\\">"+ statusBar("rgba(255,255,255,.5)",false,"MEDIO TIEMPO","HT")+sep()+scoreRow(LIVE.sH,LIVE.sA,null)+"</div>";',
+    '  } else if(isFT&&LIVE.home){',
+    '    html="<div style=\\""+ww+"\\">"+statusBar("rgba(255,255,255,.28)",false,"RESULTADO FINAL","FT")+sep()+"<div style=\\"opacity:.85;flex:1;display:flex;flex-direction:column;justify-content:center\\">"+scoreRow(LIVE.sH,LIVE.sA,null)+"</div></div>";',
+    '  } else if(LIVE.home){',
+    '    html="<div style=\\""+ww+"text-align:center;\\"><div style=\\"font-size:clamp(6px,.9cqh,9px);letter-spacing:3px;color:rgba(255,255,255,.22);text-transform:uppercase;margin-bottom:.5cqh\\">PRÓXIMO PARTIDO</div><div style=\\"display:flex;align-items:center;justify-content:center;gap:clamp(5px,1.8cqw,14px);margin-bottom:.8cqh\\">"+crest("home")+"<div style=\\"font-size:clamp(9px,1.8cqh,17px);font-weight:700;color:"+tmC+";white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:30cqw\\">"+cst(LIVE.home)+"</div><div style=\\"font-size:clamp(8px,1.2cqh,12px);color:rgba(255,255,255,.2);font-weight:300\\">VS</div><div style=\\"font-size:clamp(9px,1.8cqh,17px);font-weight:700;color:"+tmC+";white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:30cqw;text-align:right\\">"+cst(LIVE.away)+"</div>"+crest("away")+"</div><div id=\\"cdval\\" style=\\"font-size:clamp(14px,3.8cqh,44px);font-weight:900;color:"+scC+";letter-spacing:4px;line-height:1;font-family:DM Mono,monospace\\">--:--:--</div><div style=\\"font-size:clamp(5px,.8cqh,8px);color:rgba(255,255,255,.15);letter-spacing:2px;margin-top:.4cqh;text-transform:uppercase\\">Faltan para el partido</div></div>";',
+    '  } else {',
+    '    html="<div style=\\""+ww+"\\"><div style=\\"text-align:center;font-size:clamp(9px,1.4cqh,14px);color:rgba(255,255,255,.25);\\">"+(CAMPAIGN.brand||"")+"</div></div>";',
+    '  }',
+    '  bar.innerHTML=html;',
+    '}',
+'function tickCd(dateStr){',
+    '  var el=document.getElementById("cdval");if(!el)return;',
+    '  var diff=new Date(dateStr)-Date.now();',
+    '  if(diff<=0){el.textContent=(CAMPAIGN.countdown&&CAMPAIGN.countdown.message)||"\\u00a1Ya!";return;}',
+    '  var days=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);',
+    '  el.textContent=days>0?days+"d "+h+"h "+m+"m":h>0?h+"h "+m+"m "+s+"s":m+"m "+s+"s";',
+    '  _cdT=setTimeout(function(){tickCd(dateStr);},1000);',
+    '}',
+    'async function fetchMatch(fixId){',
+    '  try{',
+    '    var r=await fetch("https://v3.football.api-sports.io/fixtures?id="+fixId,{headers:{"x-apisports-key":CAMPAIGN.football.apiKey}});',
+    '    var j=await r.json();var f=j.response&&j.response[0];if(!f)return null;',
+    '    var evts=f.events||[];',
+    '    LIVE.home=f.teams.home.name;LIVE.away=f.teams.away.name;',
+    '    LIVE.sH=f.goals.home!=null?String(f.goals.home):"0";',
+    '    LIVE.sA=f.goals.away!=null?String(f.goals.away):"0";',
+    '    LIVE.min=fmtMin(f.fixture.status.elapsed,f.fixture.status.extra);',
+    '    LIVE.st=f.fixture.status.short;',
+    '    LIVE.rcH=evts.filter(function(e){return e.team&&e.team.id===f.teams.home.id&&e.type==="Card"&&e.detail==="Red Card";}).length;',
+    '    LIVE.rcA=evts.filter(function(e){return e.team&&e.team.id===f.teams.away.id&&e.type==="Card"&&e.detail==="Red Card";}).length;',
+    '    return LIVE.st;',
+    '  }catch(e){return null;}',
+    '}',
+    'async function tick(){',
+    '  if(!CAMPAIGN.football||!CAMPAIGN.football.enabled||!CAMPAIGN.football.fixtures.length){',
+    '    if(CAMPAIGN.countdown&&CAMPAIGN.countdown.enabled&&CAMPAIGN.countdown.targetDate){',
+    '      LIVE.home=null;renderBar();tickCd(CAMPAIGN.countdown.targetDate);',
+    '    } else {renderBar();}',
+    '    return;',
+    '  }',
+    '  var fxs=CAMPAIGN.football.fixtures;',
+    '  var liveFound=false;',
+    '  for(var i=0;i<fxs.length;i++){',
+    '    var st=await fetchMatch(fxs[i].id);',
+    '    if(st&&["1H","2H","ET","P","HT","FT","AET"].indexOf(st)>=0){liveFound=true;break;}',
+    '  }',
+    '  if(!liveFound){',
+    '    var nxt=fxs.slice().sort(function(a,b){return Math.abs(new Date(a.date)-Date.now())-Math.abs(new Date(b.date)-Date.now());})[0];',
+    '    LIVE.home=nxt.home;LIVE.away=nxt.away;LIVE.st="NS";LIVE.sH=null;LIVE.sA=null;',
+    '  }',
+    '  renderBar();',
+    '  if(LIVE.st==="NS"&&fxs.length){if(_cdT)clearTimeout(_cdT);tickCd(fxs[0].date);}',
+    '}',
+    'window.addEventListener("load",function(){',
+    '  setBarPos();',
+    '  var style=document.createElement("style");',
+    '  style.textContent="@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}#stage{container-type:size}";',
+    '  document.head.appendChild(style);',
+    '  tick();',
+    '  setInterval(tick,(CAMPAIGN.refreshSecs||30)*1000);',
+    '});',
+  ].join('\n');
+  return code;
+}
+
+async function doZip() {
+  if (!window.JSZip) { toast('JSZip no disponible','te'); return; }
+  toast('Generando ZIP...','ti');
+  try {
+    var zip = new JSZip();
+    zip.file('config.js', buildConfigFull());
+    zip.file('index.html', buildMotor());
+    var slug = (document.getElementById('cr-name').value||'campaign').toLowerCase().replace(/[^a-z0-9]+/g,'-');
+    var blob = await zip.generateAsync({type:'blob'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'robin-'+slug+'.zip';
+    a.click();
+    toast('ZIP descargado ✓','ts');
+    saveCampaign();
+  } catch(e) { toast('Error: '+e.message,'te'); }
+}
+
+async function doPublish() {
+  var btn = document.getElementById('btn-publish');
+  btn.disabled = true; btn.textContent = '⏳ Publicando...';
+  try {
+    if (!window.JSZip) throw new Error('JSZip no disponible');
+    var zip = new JSZip();
+    zip.file('config.js', buildConfigFull());
+    zip.file('index.html', buildMotor());
+    var blob = await zip.generateAsync({type:'blob'});
+    var arr = await blob.arrayBuffer();
+    var r = await fetch('/api/deploy', {
+      method:'POST',
+      headers:{'x-netlify-token': CFG.ntk, 'Content-Type': 'application/octet-stream'},
+      body: arr
+    });
+    var j = await r.json();
+    var url = j.ssl_url || j.url || '';
+    if (!url) throw new Error(j.message||'Deploy fallido');
+    document.getElementById('pub-result').style.display = 'block';
+    document.getElementById('pub-url').value = url;
+    // Show responsive preview iframe
+    var pf = document.getElementById('pub-preview-frame');
+    if (pf) { pf.src = url; pf.style.display = 'block'; }
+    toast('Campaña publicada ✓ — URL lista para compartir','ts',5000);
+    saveCampaign();
+  } catch(e) { toast('Error: '+e.message,'te'); }
+  btn.disabled = false; btn.textContent = '🚀 Publicar campaña';
+}
+
+function copyUrl() {
+  var u = document.getElementById('pub-url').value;
+  navigator.clipboard.writeText(u).then(function(){ toast('URL copiada','ts'); });
+}
+
+function crPreviewSize(w, h, label) {
+  var wrap = document.getElementById('pub-preview-wrap');
+  var frame = document.getElementById('pub-preview-frame');
+  var lbl = document.getElementById('pub-preview-label');
+  var ph = document.getElementById('pub-preview-ph');
+  if (!wrap || !frame) return;
+  // Maintain aspect ratio in the container
+  var aspect = h / w;
+  var inner = wrap.querySelector('[style*="padding-top"]');
+  if (inner) inner.style.paddingTop = (aspect * 100) + '%';
+  if (lbl) lbl.textContent = label + ' — ' + w + '×' + h;
+  if (ph) ph.style.display = 'none';
+  frame.style.display = 'block';
+  // Scale iframe content to fit
+  frame.style.width = '100%';
+  frame.style.height = '100%';
+}
+
+function openUrl() {
+  window.open(document.getElementById('pub-url').value,'_blank');
+}
+
+function dlConfig() {
+  var b = new Blob([buildConfigFull()], {type:'text/javascript'});
+  var a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='config.js'; a.click();
+}
+
+// ── Campaigns ─────────────────────────────────────────────────
+function saveCampaign() {
+  var id = 'cmp_'+Date.now();
+  var data = {
+    id: id,
+    name: document.getElementById('cr-name').value||'Sin nombre',
+    date: new Date().toISOString(),
+    acts: [...W.acts],
+    fixtures: W.fixtures.map(function(f){ return {id:f.fixture.id,home:f.teams.home.name,away:f.teams.away.name,date:f.fixture.date}; }),
+    cr: {bgDataUrl:CR.bgDataUrl,logoDataUrl:CR.logoDataUrl,bgColor:CR.bgColor,barPos:CR.barPos,barSize:CR.barSize,qrUrl:CR.qrUrl},
+    cdDate: W.cdDate ? W.cdDate.toISOString() : null,
+    wxCity: W.wxCity,
+  };
+  var saved = getSaved();
+  saved.push(data);
+  localStorage.setItem('robin_campaigns', JSON.stringify(saved));
+  toast('Campaña guardada','ts');
+}
+
+function getSaved() {
+  try { return JSON.parse(localStorage.getItem('robin_campaigns')||'[]'); } catch(e){ return []; }
+}
+
+function renderCampaigns() {
+  var saved = getSaved();
+  var el = document.getElementById('cmp-list');
+  if (!saved.length) {
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--w4)">No hay campañas guardadas aún.<br><br><button class="btn btn-primary" onclick="navTo(\'wizard\')">+ Nueva campaña</button></div>';
+    return;
+  }
+  el.innerHTML = saved.slice().reverse().map(function(c){
+    var thumb = c.cr && c.cr.bgDataUrl ? '<img src="'+c.cr.bgDataUrl+'" style="width:100%;height:100%;object-fit:cover">' : '<div style="width:100%;height:100%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:18px">🎬</div>';
+    return '<div class="cmp-card">'
+      +'<div class="cmp-thumb">'+thumb+'</div>'
+      +'<div class="cmp-info">'
+      +'<div class="cmp-name">'+c.name+'</div>'
+      +'<div class="cmp-meta">'+(c.acts||[]).join(' · ')+' · '+new Date(c.date).toLocaleDateString('es-MX')+'</div>'
+      +'</div>'
+      +'<div class="cmp-actions">'
+      +'<button class="btn btn-ghost btn-sm" onclick="deleteCampaign(\''+c.id+'\')">✕</button>'
+      +'</div></div>';
+  }).join('');
+}
+
+function deleteCampaign(id) {
+  var saved = getSaved().filter(function(c){ return c.id !== id; });
+  localStorage.setItem('robin_campaigns', JSON.stringify(saved));
+  renderCampaigns();
+  toast('Campaña eliminada','ti');
+}
+
+function exportRobin() {
+  var data = {
+    name: document.getElementById('cr-name').value||'campaign',
+    acts: [...W.acts],
+    fixtures: W.fixtures.map(function(f){ return {id:f.fixture.id,home:f.teams.home.name,away:f.teams.away.name,date:f.fixture.date}; }),
+    cr: {bgDataUrl:CR.bgDataUrl,logoDataUrl:CR.logoDataUrl,bgColor:CR.bgColor,barPos:CR.barPos,barSize:CR.barSize,qrUrl:CR.qrUrl},
+  };
+  var b = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  var a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download=data.name+'.robin'; a.click();
+}
+
+function importRobin(inp) {
+  if (!inp.files||!inp.files[0]) return;
+  var r = new FileReader();
+  r.onload = function(e) {
+    try {
+      var d = JSON.parse(e.target.result);
+      toast('Importado: '+d.name,'ts');
+    } catch(e){ toast('Archivo inválido','te'); }
+  };
+  r.readAsText(inp.files[0]);
+}
+
+// ── Screens ───────────────────────────────────────────────────
+function renderScreens() {
+  var el = document.getElementById('screens-grid');
+  if (!el) return;
+  el.innerHTML = SCREENS.map(function(s){
+    return '<div class="card" style="border-left:3px solid '+s.color+'">'
+      +'<div class="card-title">'+s.n+'</div>'
+      +'<div style="font-size:24px;font-weight:700;color:'+s.color+';margin:8px 0">'+s.cnt+'</div>'
+      +'<div style="font-size:11px;color:var(--w3);line-height:1.7">'+s.reach+'<br>'+s.res+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+// ── Config ────────────────────────────────────────────────────
+function loadConfig() {
+  document.getElementById('cfg-fk').value = CFG.fk||'';
+  document.getElementById('cfg-wk').value = CFG.wk||'';
+  document.getElementById('cfg-ntk').value = CFG.ntk||'';
+  document.getElementById('cfg-ank').value = CFG.ank||'';
+  // Users
+  var ul = document.getElementById('users-list');
+  if (ul) {
+    ul.innerHTML = Object.keys(CFG.users).map(function(u){
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:12px">'
+        +'<span style="color:var(--w2)">'+u+'</span>'
+        +'<span class="tag tag-gray">operador</span>'
+        +'</div>';
+    }).join('');
+  }
+}
+
+function saveConfig() {
+  CFG.fk  = document.getElementById('cfg-fk').value.trim();
+  CFG.wk  = document.getElementById('cfg-wk').value.trim();
+  CFG.ntk = document.getElementById('cfg-ntk').value.trim();
+  CFG.ank = document.getElementById('cfg-ank').value.trim();
+  localStorage.setItem('rcfg', JSON.stringify(CFG));
+  var ok = document.getElementById('cfg-ok');
+  if (ok) { ok.style.display='block'; setTimeout(function(){ ok.style.display='none'; },2000); }
+  toast('Configuración guardada','ts');
+}
+
+// ── Init ──────────────────────────────────────────────────────
+window.addEventListener('load', function() {
+  document.getElementById('lu').focus();
+  document.getElementById('lp').addEventListener('keydown', function(e){
+    if(e.key==='Enter') doLogin();
+  });
+});
+</script>
+</body>
+</html>
